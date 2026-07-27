@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.12
+  @version v1.0.13
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -362,7 +362,7 @@
     <div id="readings"></div>
     <div class="btn-row">
       <button class="ghost" id="againBtn">🔮 다시 뽑기</button>
-      <button class="ghost" id="copyBtn">🖼 이미지로 복사</button>
+      <button class="ghost" id="copyBtn">🖼 이미지로 저장</button>
     </div>
   </div>
 
@@ -388,12 +388,12 @@
     <div class="legend"><span class="badge rv" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(232,144,122,.18);color:#f3b7a6;border:1px solid #8a4a37;">역방향</span> 기운이 막히거나, 안쪽으로 향하거나, 반대로 뒤집힌 상태예요. 그림도 거꾸로 나옵니다.</div>
     <p><b>4. 결과 열어보기</b><br>
        고른 카드는 뒷면으로 놓입니다. <b>카드를 눌러 한 장씩</b> 열면 그 자리의 풀이가 나오고, 다 열면 <b>종합 풀이</b>가 붙습니다.
-       <b>🖼 이미지로 복사</b>를 누르면 카드 그림과 풀이 전체가 <b>한 장의 이미지</b>로 복사돼요. 카톡에 바로 붙여넣으시면 됩니다. (원 카드는 자동으로 열립니다)</p>
+       <b>🖼 이미지로 저장</b>을 누르면 카드 그림과 풀이 전체가 <b>한 장의 이미지(PNG)</b>로 저장돼요. 저장된 파일을 그대로 공유하시면 됩니다. (원 카드는 자동으로 열립니다)</p>
     <p><b>메이저 아르카나</b>(0~21번)는 인생의 큰 흐름을, <b>마이너 아르카나</b>는 일상의 구체적인 장면을 말해줍니다.</p>
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.12</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.13</div>
   </div>
 </div>
 
@@ -1603,6 +1603,14 @@ async function renderResultImage(){
   return cv;
 }
 
+// 파일 이름: 이로재로타로_애정운_0727_2130.png
+function imageFileName(){
+  const d = new Date();
+  const p = v => (v < 10 ? '0' : '') + v;
+  return '이로재로타로_' + topic.short + '_' +
+         p(d.getMonth()+1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '.png';
+}
+
 async function copyResult(){
   toast('이미지 만드는 중…');
   let blob = null;
@@ -1614,28 +1622,13 @@ async function copyResult(){
     copyResultText();
     return;
   }
-  // 1) 클립보드에 이미지로
-  if(navigator.clipboard && window.ClipboardItem){
-    try{
-      await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-      toast('이미지로 복사했어요');
-      return;
-    }catch(e){}
-  }
-  // 2) 모바일 공유 시트
-  try{
-    const file = new File([blob], '이로재로타로.png', {type:'image/png'});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title:'이로재로타로'});
-      return;
-    }
-  }catch(e){}
-  // 3) 이미지 파일로 저장
+  const name = imageFileName();
+  // 이미지 파일로 저장
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '이로재로타로.png';
+  a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
   toast('이미지로 저장했어요');
 }
 
