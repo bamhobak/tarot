@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.13
+  @version v1.0.14
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -362,7 +362,7 @@
     <div id="readings"></div>
     <div class="btn-row">
       <button class="ghost" id="againBtn">🔮 다시 뽑기</button>
-      <button class="ghost" id="copyBtn">🖼 이미지로 저장</button>
+      <button class="ghost" id="copyBtn">결과 복사</button>
     </div>
   </div>
 
@@ -388,12 +388,12 @@
     <div class="legend"><span class="badge rv" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(232,144,122,.18);color:#f3b7a6;border:1px solid #8a4a37;">역방향</span> 기운이 막히거나, 안쪽으로 향하거나, 반대로 뒤집힌 상태예요. 그림도 거꾸로 나옵니다.</div>
     <p><b>4. 결과 열어보기</b><br>
        고른 카드는 뒷면으로 놓입니다. <b>카드를 눌러 한 장씩</b> 열면 그 자리의 풀이가 나오고, 다 열면 <b>종합 풀이</b>가 붙습니다.
-       <b>🖼 이미지로 저장</b>을 누르면 카드 그림과 풀이 전체가 <b>한 장의 이미지(PNG)</b>로 저장돼요. 저장된 파일을 그대로 공유하시면 됩니다. (원 카드는 자동으로 열립니다)</p>
+       <b>결과 복사</b>를 누르면 뽑은 카드와 풀이 전체가 글자로 복사돼요. 카톡에 바로 붙여넣으시면 됩니다. (원 카드는 자동으로 열립니다)</p>
     <p><b>메이저 아르카나</b>(0~21번)는 인생의 큰 흐름을, <b>마이너 아르카나</b>는 일상의 구체적인 장면을 말해줍니다.</p>
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.13</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.14</div>
   </div>
 </div>
 
@@ -1388,10 +1388,10 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
 }
-function copyResultText(){
+function copyResult(){
   const text = resultText();
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(()=>toast('글자로 복사했어요'), fallbackCopy);
+    navigator.clipboard.writeText(text).then(()=>toast('결과를 복사했어요'), fallbackCopy);
   } else fallbackCopy();
   function fallbackCopy(){
     const ta = document.createElement('textarea');
@@ -1399,237 +1399,10 @@ function copyResultText(){
     ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
-    try{ document.execCommand('copy'); toast('글자로 복사했어요'); }
+    try{ document.execCommand('copy'); toast('결과를 복사했어요'); }
     catch(e){ toast('복사에 실패했어요'); }
     document.body.removeChild(ta);
   }
-}
-
-/* ───────── 결과를 이미지로 만들기 (카드 그림 + 풀이 전체) ───────── */
-const IMG_W = 720, PAD = 28;
-const FONT = '"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
-const f = (size, weight) => (weight || 400) + ' ' + size + 'px ' + FONT;
-
-function loadImg(src){
-  return new Promise(res=>{
-    const im = new Image();
-    im.onload = ()=>res(im);
-    im.onerror = ()=>res(null);
-    im.src = src;
-  });
-}
-// 한글은 어절 단위로 끊기 어려워 글자 단위로 줄바꿈한다
-function wrapLines(ctx, text, maxW){
-  const out = [];
-  let line = '';
-  for(const ch of text){
-    const test = line + ch;
-    if(ctx.measureText(test).width > maxW && line){
-      if(ch === ' '){ out.push(line); line = ''; continue; }
-      out.push(line); line = ch;
-    } else line = test;
-  }
-  if(line) out.push(line);
-  return out;
-}
-function roundRect(ctx, x, y, w, h, r){
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y,   x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x,   y+h, r);
-  ctx.arcTo(x,   y+h, x,   y,   r);
-  ctx.arcTo(x,   y,   x+w, y,   r);
-  ctx.closePath();
-}
-
-async function renderResultImage(){
-  const chosen = picked.map(i=>fanCards[i]);
-  const P = posOf();
-  const q = $('question').value.trim();
-  const imgs = await Promise.all(chosen.map(fc=>loadImg(fc.card.img)));
-
-  // ── 1차: 측정용 컨텍스트로 높이를 계산 ──
-  const m = document.createElement('canvas').getContext('2d');
-  const innerW = IMG_W - PAD*2;
-  const bodyW  = innerW - 36;               // 풀이 패널 안쪽 폭
-
-  const n = chosen.length;
-  const gap = 14;
-  const prefer = n === 1 ? 200 : n === 3 ? 152 : 112;
-  const cw = Math.min(prefer, (innerW - gap*(n-1)) / n);
-  const ch = cw * 1.723;
-
-  let y = 34;
-  y += 34;                                   // 타이틀
-  y += 24;                                   // 항목 · 스프레드
-  if(q){ m.font = f(15); y += wrapLines(m, '“' + q + '”', innerW).length * 22 + 4; }
-  y += 18;
-  const cardTop = y + 20;                    // 자리 이름 아래
-  y = cardTop + ch + 22;                     // 카드 + 역방향 표시
-
-  const blocks = chosen.map((fc, i)=>{
-    const c = fc.card;
-    const r = readOf(c, fc.reversed);
-    const kind = c.type === 'major'
-      ? '메이저 아르카나 · ' + toRoman(c.num) + ' ' + c.en
-      : '마이너 아르카나 · ' + c.suit.el;
-    m.font = f(15); const mainL = wrapLines(m, r.main, bodyW);
-    m.font = f(13); const baseL = r.base ? wrapLines(m, '카드 자체의 뜻 — ' + r.base, bodyW) : [];
-    m.font = f(12); const posL  = wrapLines(m, P.pos[i] + ' — ' + P.desc[i] + ' · ' + kind, bodyW);
-    const h = 18 + 26 + posL.length*17 + 22 + mainL.length*24 + (baseL.length ? 12 + baseL.length*20 : 0) + 18;
-    return {fc, c, r, posL, mainL, baseL, h};
-  });
-  blocks.forEach(b=>{ y += b.h + 12; });
-
-  m.font = f(15);
-  const sumL = wrapLines(m, summarize(chosen), bodyW);
-  const sumH = 18 + 26 + sumL.length*24 + 18;
-  y += sumH + 26;
-  const H = y + 20;
-
-  // ── 2차: 실제로 그리기 ──
-  const cv = document.createElement('canvas');
-  const S = 2;
-  cv.width = IMG_W * S; cv.height = H * S;
-  const ctx = cv.getContext('2d');
-  ctx.scale(S, S);
-  ctx.textBaseline = 'top';
-
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#1d1440'); bg.addColorStop(0.55, '#120c26'); bg.addColorStop(1, '#0b0718');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, IMG_W, H);
-  ctx.strokeStyle = 'rgba(232,200,119,.35)'; ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, IMG_W-2, H-2);
-
-  y = 34;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#e8c877'; ctx.font = f(25, 800);
-  ctx.fillText('🔮 이로재로타로', IMG_W/2, y);  y += 34;
-  ctx.fillStyle = '#b6abdc'; ctx.font = f(14, 700);
-  ctx.fillText(topic.icon + ' ' + topic.name + ' · ' + spread.title, IMG_W/2, y + 3);  y += 24;
-  if(q){
-    ctx.fillStyle = '#e8c877'; ctx.font = f(15);
-    wrapLines(ctx, '“' + q + '”', innerW).forEach(l=>{ ctx.fillText(l, IMG_W/2, y); y += 22; });
-    y += 4;
-  }
-  y += 18;
-
-  // 카드 줄
-  const rowW = cw*n + gap*(n-1);
-  let x = (IMG_W - rowW) / 2;
-  chosen.forEach((fc, i)=>{
-    ctx.fillStyle = '#e8c877'; ctx.font = f(12, 700);
-    ctx.fillText(P.pos[i], x + cw/2, cardTop - 18);
-    const im = imgs[i];
-    ctx.save();
-    roundRect(ctx, x, cardTop, cw, ch, 7); ctx.clip();
-    if(im){
-      if(fc.reversed){
-        ctx.translate(x + cw/2, cardTop + ch/2);
-        ctx.rotate(Math.PI);
-        ctx.drawImage(im, -cw/2, -ch/2, cw, ch);
-      } else ctx.drawImage(im, x, cardTop, cw, ch);
-    } else { ctx.fillStyle = '#2b1f63'; ctx.fillRect(x, cardTop, cw, ch); }
-    ctx.restore();
-    roundRect(ctx, x, cardTop, cw, ch, 7);
-    ctx.strokeStyle = '#a98f47'; ctx.lineWidth = 2; ctx.stroke();
-    if(fc.reversed){
-      ctx.fillStyle = '#e8907a'; ctx.font = f(11, 800);
-      ctx.fillText('역방향', x + cw/2, cardTop + ch + 5);
-    }
-    x += cw + gap;
-  });
-  y = cardTop + ch + 22;
-
-  // 풀이 패널
-  ctx.textAlign = 'left';
-  blocks.forEach(b=>{
-    roundRect(ctx, PAD, y, innerW, b.h, 14);
-    const g = ctx.createLinearGradient(0, y, 0, y + b.h);
-    g.addColorStop(0, '#241a4d'); g.addColorStop(1, '#2e2260');
-    ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = '#3c2f74'; ctx.lineWidth = 1; ctx.stroke();
-
-    let ty = y + 18, tx = PAD + 18;
-    ctx.fillStyle = '#e8c877'; ctx.font = f(18, 800);
-    const title = b.c.sym + ' ' + b.c.name;
-    ctx.fillText(title, tx, ty);
-    // 정/역 배지
-    const bw = ctx.measureText(title).width;
-    const rv = b.fc.reversed;
-    ctx.font = f(11, 800);
-    const label = rv ? '역방향' : '정방향';
-    const lw = ctx.measureText(label).width + 16;
-    roundRect(ctx, tx + bw + 10, ty + 3, lw, 19, 10);
-    ctx.fillStyle = rv ? 'rgba(232,144,122,.18)' : 'rgba(139,108,240,.25)'; ctx.fill();
-    ctx.strokeStyle = rv ? '#8a4a37' : '#5b45a8'; ctx.stroke();
-    ctx.fillStyle = rv ? '#f3b7a6' : '#cbbcff';
-    ctx.fillText(label, tx + bw + 18, ty + 7);
-    ty += 26;
-
-    ctx.fillStyle = '#b6abdc'; ctx.font = f(12);
-    b.posL.forEach(l=>{ ctx.fillText(l, tx, ty); ty += 17; });
-    ty += 4;
-    ctx.fillStyle = '#d9cdff'; ctx.font = f(12.5, 700);
-    ctx.fillText('🔑 ' + b.c.kw, tx, ty); ty += 22;
-    ctx.fillStyle = '#e4dcff'; ctx.font = f(15);
-    b.mainL.forEach(l=>{ ctx.fillText(l, tx, ty); ty += 24; });
-    if(b.baseL.length){
-      ty += 6;
-      ctx.strokeStyle = 'rgba(232,200,119,.22)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + bodyW, ty); ctx.stroke();
-      ty += 8;
-      ctx.fillStyle = '#a99ed4'; ctx.font = f(13);
-      b.baseL.forEach(l=>{ ctx.fillText(l, tx, ty); ty += 20; });
-    }
-    y += b.h + 12;
-  });
-
-  // 종합 풀이
-  roundRect(ctx, PAD, y, innerW, sumH, 14);
-  ctx.fillStyle = 'rgba(232,200,119,.07)'; ctx.fill();
-  ctx.strokeStyle = '#a98f47'; ctx.lineWidth = 1; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
-  let sy = y + 18;
-  ctx.fillStyle = '#e8c877'; ctx.font = f(16, 800);
-  ctx.fillText(topic.icon + ' ' + topic.name + ' 종합 풀이', PAD + 18, sy); sy += 26;
-  ctx.fillStyle = '#f0e8ff'; ctx.font = f(15);
-  sumL.forEach(l=>{ ctx.fillText(l, PAD + 18, sy); sy += 24; });
-  y += sumH + 20;
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#6b5f9a'; ctx.font = f(12);
-  ctx.fillText('bamhobak.github.io/tarot', IMG_W/2, y);
-
-  return cv;
-}
-
-// 파일 이름: 이로재로타로_애정운_0727_2130.png
-function imageFileName(){
-  const d = new Date();
-  const p = v => (v < 10 ? '0' : '') + v;
-  return '이로재로타로_' + topic.short + '_' +
-         p(d.getMonth()+1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '.png';
-}
-
-async function copyResult(){
-  toast('이미지 만드는 중…');
-  let blob = null;
-  try{
-    const cv = await renderResultImage();
-    blob = await new Promise(res=>cv.toBlob(res, 'image/png'));
-  }catch(e){ blob = null; }
-  if(!blob){                       // 로컬 파일(file://)에서는 캔버스 보안 제한으로 실패 → 글자 복사
-    copyResultText();
-    return;
-  }
-  const name = imageFileName();
-  // 이미지 파일로 저장
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 4000);
-  toast('이미지로 저장했어요');
 }
 
 /* ───────── 화면 전환 ───────── */
