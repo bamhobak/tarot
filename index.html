@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.18
+  @version v1.0.21
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -403,7 +403,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.18</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.21</div>
   </div>
 </div>
 
@@ -966,7 +966,7 @@ function posOf(){
 const SPREADS = [
   {key:'one',   title:'원 카드',  desc:'오늘의 한 장', n:1},
   {key:'three', title:'쓰리 카드', desc:'흐름 보기',   n:3},
-  {key:'five',  title:'파이브',   desc:'상황 전체 보기', n:5}
+  {key:'five',  title:'파이브',   desc:'', n:5}
 ];
 let spread = SPREADS[1];
 
@@ -1013,7 +1013,7 @@ function buildSpreads(){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'spread' + (s.key === spread.key ? ' on' : '');
-    b.innerHTML = '<b>' + s.title + '</b><span>' + s.desc + '</span>';
+    b.innerHTML = '<b>' + s.title + '</b>' + (s.desc ? '<span>' + s.desc + '</span>' : '');
     b.addEventListener('click', ()=>{
       spread = s;
       box.querySelectorAll('.spread').forEach(x=>x.classList.remove('on'));
@@ -1415,7 +1415,10 @@ function copyResult(){
 }
 
 /* ───────── 제미나이 전문가 풀이 (집 PC 중계 서버 경유) ───────── */
-const RELAY_DEFAULT = 'http://localhost:8765';
+// 중계 서버 주소. 터널(ngrok 고정주소)을 켜면 여기에 넣어두면 모두가 쓸 수 있다.
+// 예) 'https://tarot-bamhobak.ngrok-free.app'
+const RELAY_PUBLIC = 'https://identify-stimuli-reapply.ngrok-free.dev';
+const RELAY_DEFAULT = RELAY_PUBLIC || 'http://localhost:8765';
 const relayUrl = () => (localStorage.getItem('tarotRelay') || RELAY_DEFAULT).replace(/\/+$/, '');
 function setRelay(){
   const v = prompt('중계 서버 주소를 넣어주세요.\n(집 PC에서 볼 때는 http://localhost:8765)', relayUrl());
@@ -1468,7 +1471,11 @@ async function askAI(){
   try{
     const res = await fetch(relayUrl() + '/reading', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        // ngrok 무료 터널이 브라우저에 띄우는 경고 페이지를 건너뛴다
+        'ngrok-skip-browser-warning':'1'
+      },
       body: JSON.stringify(body)
     });
     const j = await res.json();

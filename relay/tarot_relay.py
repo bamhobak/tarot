@@ -9,6 +9,7 @@
 """
 import json
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -28,6 +29,11 @@ import gemini_scraper as G
 PORT = 8765
 IDLE_STOP_SEC = 120        # 이 시간 동안 요청이 없으면 제미나이 창을 닫는다
 QUERY_TIMEOUT = 180        # 제미나이 응답 대기 최대 시간(초)
+
+# 인터넷에 열리므로(터널) 아무나 막 쓰지 못하게 최소한의 빗장
+ALLOWED_ORIGINS = ("https://bamhobak.github.io",)   # 타로 페이지
+COOLDOWN_SEC = 20          # 같은 사람이 연달아 조를 수 없게
+DAILY_LIMIT = 300          # 하루 전체 요청 상한
 
 _lock = threading.Lock()   # 제미나이는 한 번에 한 요청만
 _last_use = 0.0
@@ -111,6 +117,84 @@ def ask_gemini(prompt):
         return text
 
 
+# ── ngrok 터널 (밖에서도 쓰게 하기) ───────────────────
+_ngrok_proc = None
+_public_url = ""
+
+
+def tunnel_domain():
+    """터널 설정.bat 이 만들어 둔 tunnel.txt 에서 고정 주소를 읽는다."""
+    p = os.path.join(_APP_DIR, "tunnel.txt")
+    try:
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    return line.replace("https://", "").replace("http://", "").rstrip("/")
+    except Exception:
+        pass
+    return ""
+
+
+def start_tunnel():
+    """ngrok.exe 가 옆에 있고 고정 주소가 설정돼 있으면 터널을 연다."""
+    global _ngrok_proc, _public_url
+    exe = os.path.join(_APP_DIR, "ngrok.exe")
+    dom = tunnel_domain()
+    if not os.path.exists(exe):
+        log("ngrok.exe 가 없어서 터널 없이 갑니다 — '터널 준비.bat' 을 한 번 실행하세요 (지금은 이 PC에서만 사용 가능)")
+        return
+    if not dom:
+        log("터널 주소가 설정되지 않았습니다. '터널 설정.bat' 을 한 번 실행하세요 (이 PC에서만 사용 가능)")
+        return
+    try:
+        flags = 0x08000000 if os.name == "nt" else 0      # CREATE_NO_WINDOW
+        args = [exe, "http", str(PORT), "--domain=" + dom, "--log=stdout"]
+        cfg = os.path.join(_APP_DIR, "ngrok.yml")         # 인증토큰이 든 설정(있으면 사용)
+        if os.path.exists(cfg):
+            args += ["--config", cfg]
+        _ngrok_proc = subprocess.Popen(
+            args, cwd=_APP_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=flags)
+        _public_url = "https://" + dom
+        log("터널 열림:", _public_url)
+    except Exception as e:
+        log("터널을 못 열었습니다:", e)
+        if "225" in str(e) or "바이러스" in str(e):
+            log("→ 백신이 ngrok 을 막았습니다. '터널 준비.bat' 을 실행해 예외를 등록한 뒤 다시 켜주세요.")
+
+
+def stop_tunnel():
+    global _ngrok_proc
+    if _ngrok_proc is not None:
+        try:
+            _ngrok_proc.terminate()
+        except Exception:
+            pass
+        _ngrok_proc = None
+
+
+# ── 남용 방지 ────────────────────────────────────────
+_seen = {}          # ip -> 마지막 요청 시각
+_today = ["", 0]    # [날짜, 오늘 처리한 수]
+
+
+def gate(ip):
+    """통과하면 None, 막으면 (코드, 사유)"""
+    now = time.time()
+    day = time.strftime("%Y-%m-%d")
+    if _today[0] != day:
+        _today[0], _today[1] = day, 0
+    if _today[1] >= DAILY_LIMIT:
+        return 429, "오늘은 여기까지예요. 내일 다시 봐주세요."
+    last = _seen.get(ip, 0)
+    if now - last < COOLDOWN_SEC:
+        return 429, "조금만 천천히요. %d초 뒤에 다시 눌러주세요." % int(COOLDOWN_SEC - (now - last) + 1)
+    _seen[ip] = now
+    _today[1] += 1
+    return None
+
+
 def idle_watcher():
     """놀고 있으면 제미나이 창을 닫아서 인터넷을 돌려준다."""
     while True:
@@ -130,8 +214,14 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "TarotRelay/1.0"
 
     def _cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # 타로 페이지 · 로컬에서 연 파일만 허용
+        origin = self.headers.get("Origin") or ""
+        ok = (origin in ALLOWED_ORIGINS or origin == "null"
+              or origin.startswith("http://localhost")
+              or origin.startswith("http://127.0.0.1"))
+        self.send_header("Access-Control-Allow-Origin", origin if ok else "https://bamhobak.github.io")
+        # ngrok 무료 계정의 경고 페이지를 건너뛰는 헤더도 허용해야 한다
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, ngrok-skip-browser-warning")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         # 크롬이 공개 사이트 → 사설망 요청을 막는 것(Private Network Access) 허용
         self.send_header("Access-Control-Allow-Private-Network", "true")
@@ -153,7 +243,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith("/health"):
-            self._json(200, {"ok": True, "connected": G.is_connected()})
+            self._json(200, {"ok": True, "connected": G.is_connected(),
+                             "public": _public_url, "today": _today[1]})
         else:
             self._json(404, {"ok": False, "error": "not found"})
 
@@ -166,6 +257,13 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(n).decode("utf-8")) if n else {}
         except Exception as e:
             self._json(400, {"ok": False, "error": "요청을 읽지 못했어요: %s" % e})
+            return
+
+        ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
+        blocked = gate(ip)
+        if blocked:
+            log("막음(%s): %s" % (ip, blocked[1]))
+            self._json(blocked[0], {"ok": False, "error": blocked[1]})
             return
 
         prompt = build_prompt(data)
@@ -191,6 +289,7 @@ class Server(ThreadingHTTPServer):
 
 def main():
     threading.Thread(target=idle_watcher, daemon=True, name="IdleWatcher").start()
+    start_tunnel()
     try:
         srv = Server(("0.0.0.0", PORT), Handler)
     except OSError as e:
@@ -206,6 +305,7 @@ def main():
     except KeyboardInterrupt:
         log("종료합니다")
     finally:
+        stop_tunnel()
         try:
             G.stop()
         except Exception:

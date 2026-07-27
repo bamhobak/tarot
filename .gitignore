@@ -3,6 +3,12 @@ relay/build/
 relay/dist/
 relay/relay.log
 relay/__pycache__/
+relay/_ngrok_cache.zip
+
+# 비밀값 (ngrok 인증토큰 등) — 절대 올리지 않음
+relay/secrets/
+ngrok.yml
+ngrok.exe
 
 # 바탕화면으로 나가는 배포 묶음
 *.zip

@@ -15,7 +15,8 @@ choice /C YN /M "지금 돌고 있는 중계서버도 끌까요"
 if errorlevel 2 goto :end
 
 taskkill /IM TarotRelay.exe /F > nul 2>&1
-echo  [O] 중계서버를 껐습니다.
+taskkill /IM ngrok.exe /F > nul 2>&1
+echo  [O] 중계서버와 터널을 껐습니다.
 
 :end
 echo.
