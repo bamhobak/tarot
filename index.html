@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.45
+  @version v1.0.46
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -324,6 +324,11 @@
   .imgsheet .ishint{
     font-size:13.5px;color:var(--gold);text-align:center;margin:2px 0 10px;
   }
+  .imgsheet .iswarn{
+    font-size:12px;line-height:1.55;color:#f3b7a6;text-align:center;
+    background:rgba(232,144,122,.10);border:1px solid #8a4a37;
+    border-radius:9px;padding:8px 10px;margin:0 0 10px;
+  }
   .imgsheet img{width:100%;border-radius:10px;display:block;}
   .imgsheet .close{
     width:100%;margin-top:12px;padding:12px;font-size:15px;font-weight:700;
@@ -430,7 +435,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.45</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.46</div>
   </div>
 </div>
 
@@ -865,7 +870,7 @@ function renderAiImage(withCards){
   const H = headH + cardsH + panelH + 40;
 
   // 폰에서는 2배로 그리면 인코딩이 오래 걸려서 1.5배로
-  const S = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1.5 : 2;
+  const S = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1.25 : 2;
   const cv = document.createElement('canvas');
   cv.width = IMG_W*S; cv.height = H*S;
   const ctx = cv.getContext('2d');
@@ -1040,25 +1045,33 @@ async function saveImage(){
   }catch(e){ showImageSheet(blob); }
 }
 
-/* 폰용 — 만든 그림을 그대로 띄워서 길게 눌러 저장하게 한다 */
+/* 폰용 — 만든 그림을 그대로 띄워서 길게 눌러 저장하게 한다.
+   ※ 카톡·인스타 같은 인앱 브라우저는 blob: 이미지를 저장하지 못해서 data: 로 넘긴다 */
+const INAPP = /KAKAOTALK|NAVER.inapp|Instagram|FBAV|FB_IAB|Line\//i.test(navigator.userAgent);
+
 function showImageSheet(blob){
-  const url = URL.createObjectURL(blob);
-  const ov = document.createElement('div');
-  ov.className = 'overlay show imgsheet';
-  ov.innerHTML =
-    '<div class="modal">' +
-      '<p class="ishint">그림을 <b>길게 눌러</b> [이미지 저장]을 선택하세요.</p>' +
-      '<img src="' + url + '" alt="타로 결과">' +
-      '<button class="close">닫기</button>' +
-    '</div>';
-  ov.querySelector('.close').addEventListener('click', ()=>{
-    ov.remove(); URL.revokeObjectURL(url);
-  });
-  ov.addEventListener('click', e=>{
-    if(e.target === ov){ ov.remove(); URL.revokeObjectURL(url); }
-  });
-  document.body.appendChild(ov);
+  const fr = new FileReader();
+  fr.onload = ()=>openSheet(fr.result);
+  fr.onerror = ()=>openSheet(URL.createObjectURL(blob));
+  fr.readAsDataURL(blob);
+
+  function openSheet(src){
+    const ov = document.createElement('div');
+    ov.className = 'overlay show imgsheet';
+    ov.innerHTML =
+      '<div class="modal">' +
+        '<p class="ishint">그림을 <b>길게 눌러</b> [이미지 저장]을 선택하세요.</p>' +
+        (INAPP ? '<p class="iswarn">카톡 안에서는 저장이 막힐 수 있어요.<br>' +
+                 '오른쪽 위 <b>⋮ → 다른 브라우저로 열기</b> 후 다시 시도해주세요.</p>' : '') +
+        '<img src="' + src + '" alt="타로 결과">' +
+        '<button class="close">닫기</button>' +
+      '</div>';
+    ov.querySelector('.close').addEventListener('click', ()=>ov.remove());
+    ov.addEventListener('click', e=>{ if(e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
 }
+
 
 
 let toastTimer = null;
