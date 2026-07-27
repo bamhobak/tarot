@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.37
+  @version v1.0.44
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -87,18 +87,24 @@
   }
   .label b{color:var(--rev);font-weight:800;}
 
-  /* 항목(무엇을 볼지) 선택 */
-  .topics{display:flex;gap:6px;flex-wrap:wrap;}
+  /* 항목(무엇을 볼지) 선택 — 첫줄 3개, 둘째줄 2개 */
+  .topics{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
   .topic{
-    flex:1 1 auto;padding:9px 6px;border-radius:11px;cursor:pointer;
+    grid-column:span 2;
+    padding:8px 4px;border-radius:11px;cursor:pointer;
     background:rgba(0,0,0,.22);border:1.5px solid var(--line);
-    font-family:inherit;font-size:12.5px;font-weight:700;color:var(--sub);
-    display:flex;align-items:center;justify-content:center;gap:4px;
-    white-space:nowrap;transition:.15s;
+    font-family:inherit;color:var(--sub);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    line-height:1.25;transition:.15s;
+    min-height:46px;                      /* 다섯 개 모두 같은 높이 */
   }
-  .topic i{font-style:normal;font-size:13px;}
+  /* 둘째 줄(직업·금전)도 첫째 줄과 같은 너비로, 가운데 정렬 */
+  .topic:nth-child(4){grid-column:2 / span 2;}
+  .topic:nth-child(5){grid-column:4 / span 2;}
+  .topic .tn{font-size:12.5px;font-weight:700;white-space:nowrap;}
+  .topic .ts{font-size:10.5px;opacity:.75;white-space:nowrap;}
+  .topic i{font-style:normal;font-size:12px;margin-right:3px;}
   .topic.on{border-color:var(--gold);background:rgba(232,200,119,.14);color:var(--gold);}
-
 
   .primary{
     width:100%;margin-top:16px;padding:14px;font-size:16px;font-weight:800;
@@ -379,7 +385,7 @@
     <div class="read ai" id="aiBox"></div>
     <div class="btn-row">
       <button class="ghost" id="againBtn">🔮 다시 뽑기</button>
-      <button class="ghost" id="copyBtn">결과 복사</button>
+      <button class="ghost" id="copyBtn">🖼 이미지 저장</button>
     </div>
   </div>
 
@@ -390,7 +396,7 @@
   <div class="modal">
     <h2>타로 보는 법</h2>
     <p><b>1. 항목과 질문 고르기</b><br>
-       먼저 <b>무엇을 볼지</b> 고르세요. 💼 직업운 · 💗 애정운 · 💍 결혼운 · 💰 금전운 —
+       먼저 <b>무엇을 볼지</b> 고르세요. 💼 직업운 · 💗 애정운(상대 있음) · 💘 애정운(상대 없음) · 💍 결혼운 · 💰 금전운 —
        항목에 따라 자리 이름과 카드 풀이, 종합 풀이가 <b>모두 그 주제에 맞게</b> 바뀝니다.<br>
        그다음 <b>궁금한 것을 꼭 적어주세요.</b> 질문이 구체적일수록 풀이도 정확해집니다.<br>
        카드는 <b>3장</b>을 뽑습니다.</p>
@@ -412,7 +418,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.37</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.44</div>
   </div>
 </div>
 
@@ -421,73 +427,30 @@
 <script>
 /* ───────── 메이저 아르카나 22장 ───────── */
 /* [번호, 이름, 영문, 상징, 키워드, 정방향, 역방향] */
+/* 카드 정보: [번호, 이름, 영문, 상징, 키워드] */
 const MAJOR = [
-  [0,'바보','The Fool','🎒','새로운 시작 · 순수 · 모험',
-   '아무것도 안 정해진 게 불안하지? 뒤집으면 뭐든 될 수 있다는 뜻이야. 경험 없어서 못 한다는 소리 그만해, 준비 다 되면 시작하겠다는 사람치고 시작하는 사람 못 봤어. 지금 마음 가는 쪽으로 한 발만 떼면 돼.',
-   '설렘이랑 충동을 구분 못 하고 있잖아. 아무 대비 없이 뛰어드는 건 용기가 아니라 그냥 사고야. 하고 싶은 마음까지 접으란 건 아닌데, 최소한 돌아올 다리 하나는 남겨두고 뛰어.'],
-  [1,'마법사','The Magician','🪄','재능 · 실행력 · 자원',
-   '필요한 건 이미 다 갖고 있어. 뭐 하나 더 배우면, 누가 도와주면 시작하겠다는 거 전부 미루는 핑계야. 지금 손에 있는 걸로 그냥 시작해, 생각보다 굴러가. 먼저 말 꺼내는 사람이 먹는 판이거든.',
-   '실력이 없는 게 아니라 엉뚱한 데 쓰고 있어. 말은 화려한데 내놓을 결과물이 없지? 그거 남들도 다 눈치챘어. 크게 떠들지 말고 작아도 확실한 거 하나부터 끝내.'],
-  [2,'여사제','The High Priestess','🌙','직관 · 비밀 · 기다림',
-   '아직 안 드러난 게 있어. 캐묻고 다그치면 오히려 닫히니까 지금은 입 다물고 지켜보는 게 이득이야. 사실 감으로는 이미 알고 있잖아. 그 감, 이번엔 꽤 정확해.',
-   '속마음 숨기다가 오해만 키우고 있잖아. 말 안 해도 알아주길 바라는 거, 상대는 절대 모르거든. 답을 알면서 모른 척하는 중이야. 꺼내야 풀려.'],
-  [3,'여황제','The Empress','🌷','풍요 · 돌봄 · 결실',
-   '공들인 게 익어서 열매 맺는 때야. 나 챙기고 주변 넉넉히 품으면 그만큼 돌아와. 만들고 키우는 일, 사람 품는 자리가 특히 잘 맞으니까 아끼지 말고 써.',
-   '다 해주는 게 사랑인 줄 아는데 받는 쪽은 부담스러워. 그리고 남 챙기느라 정작 네 안은 텅 비었잖아. 남한테 쓰던 정성 절반만 너한테 돌려.'],
-  [4,'황제','The Emperor','🏛','질서 · 책임 · 안정',
-   '기준을 세우면 흔들리던 게 제자리 찾아. 지금은 감정보다 체계가 이기는 판이야. 책임지는 자리 오면 피하지 마, 그거 실력 인정받았다는 뜻이거든.',
-   '고집 부리는 걸 소신이라고 부르고 있잖아. 힘으로 누르면 정리되는 것 같지? 사람이 먼저 나가. 원칙은 지키되 예외 하나쯤은 인정해줘.'],
-  [5,'교황','The Hierophant','⛪','배움 · 전통 · 조언',
-   '먼저 간 사람 방식 따라가면 삽질 안 해도 돼. 자존심 때문에 안 묻는 거, 그게 제일 큰 시간 낭비야. 지금은 검증된 길 밟는 게 제일 빠른 길이야.',
-   '남들 다 그렇게 한다는 이유로 따라가고 있잖아. 답답하면 벗어나도 돼. 대신 부수기 전에 그 규칙이 왜 생겼는지는 한 번 보고 부숴.'],
-  [6,'연인','The Lovers','💞','사랑 · 선택 · 결합',
-   '마음 통하는 사람이 있거나, 둘 중 하나 반드시 골라야 하는 자리야. 계산기 두드려 나온 답보다 진심이 향한 쪽이 결국 맞아. 이번엔 머리 말고 마음 따라가.',
-   '양쪽 다 붙잡으려다 둘 다 놓치는 중이야. 결정 안 하는 것도 결정인데, 제일 손해 보는 결정이거든. 마음이 어디로 기울었는지 너도 알잖아.'],
-  [7,'전차','The Chariot','🏇','추진력 · 의지 · 승리',
-   '방향만 정하면 밀어붙일 힘은 충분해. 문제는 힘이 아니라 갈팡질팡이야. 정했으면 속도 내, 재는 시간이 길수록 손해거든.',
-   '바쁘긴 엄청 바쁜데 남는 게 없지? 방향 없이 속도만 내니까 그래. 조급하면 사고 나니까 잠깐 멈춰. 그게 오히려 빠른 길이야.'],
-  [8,'힘','Strength','🦁','용기 · 인내 · 부드러움',
-   '힘으로 꺾지 말고 다독여서 이기는 때야. 조급해하지 않는 것만으로도 상황이 길들여져. 까다로운 사람도 시간 들이면 결국 네 편 돼.',
-   '자신감 떨어진 거, 능력 부족이 아니라 비교 중독 때문이야. 남 보면서 작아지는 시간에 오늘 네가 해낸 거 하나만 세봐. 거기서 다시 붙어.'],
-  [9,'은둔자','The Hermit','🏮','성찰 · 고독 · 탐구',
-   '혼자 있는 시간이 필요해. 답은 밖에 없고 네가 이미 아는 것 안에 있어. 사람들 만나서 시끄럽게 푸는 것보다 조용히 정리하는 게 훨씬 나아.',
-   '혼자 버티는 게 강한 거라고 착각하고 있잖아. 그건 그냥 고립이야. 내민 손 계속 뿌리치면 나중엔 아무도 안 내밀어. 한 명한테만이라도 털어놔.'],
-  [10,'운명의 수레바퀴','Wheel of Fortune','🎡','전환점 · 흐름 · 기회',
-   '흐름이 바뀌는 지점이야. 네가 잘나서 온 게 아니라 때가 돼서 굴러온 기회니까, 재다가 놓치면 다음은 언제일지 몰라. 이번 변화는 좋은 쪽이야.',
-   '같은 자리 맴돌고 타이밍은 계속 어긋나. 억지로 밀면 더 꼬여. 근데 매번 같은 데서 걸린다면 그건 운이 아니라 패턴이야, 그것부터 끊어.'],
-  [11,'정의','Justice','⚖️','공정 · 균형 · 결과',
-   '뿌린 대로 정확히 돌아와. 원칙대로 하면 결과도 네 편이고 계약이나 평가 같은 공적인 일에 유리해. 감정 빼고 사실만 놓고 보면 답은 이미 나와 있어.',
-   '참는 게 미덕인 줄 아는데 지금은 아니야. 기운 판에서 계속 손해만 보고 있잖아. 따질 건 따져, 안 그러면 계속 만만하게 봐.'],
-  [12,'매달린 사람','The Hanged Man','🙃','관점 전환 · 멈춤 · 헌신',
-   '지금은 나아갈 때가 아니라 뒤집어 볼 때야. 멈춰 있는 게 손해 같지? 이 시간이 나중에 값을 해. 조급함만 내려놓으면 돼.',
-   '참으면 언젠가 알아줄 거라 믿고 있잖아. 안 알아줘. 기약 없이 버티는 건 헌신이 아니라 그냥 손해야. 네 몫 아닌 짐은 돌려줘.'],
-  [13,'죽음','Death','💀','끝맺음 · 변화 · 재생',
-   '한 챕터가 확실히 닫혀. 무서운 카드 아니야, 비워야 새 게 들어온다는 뜻이거든. 어차피 끝날 거 네 손으로 끝내면 그다음이 훨씬 수월해.',
-   '이미 끝난 걸 못 놓고 있잖아. 미련이 다음 문을 막고 있어. 아쉬운 건 인정하되, 돌아오지 않을 것에 시간 더 쓰지 마.'],
-  [14,'절제','Temperance','🏺','조화 · 균형 · 절도',
-   '알맞은 속도, 알맞은 양이 답이야. 극단으로 안 가는 것만으로도 오래 갈 흐름이 만들어져. 서로 다른 걸 잘 섞으면 혼자선 못 낼 결과가 나와.',
-   '한쪽으로 완전히 쏠렸어. 과한 거든 부족한 거든 본인이 제일 잘 알잖아. 이것저것 병행하는 것부터 줄이고 하나씩 제자리로 돌려놔.'],
-  [15,'악마','The Devil','😈','집착 · 유혹 · 속박',
-   '끊어야 하는 거 알면서 못 끊고 있지. 돈이든 사람이든 습관이든, 그 사슬 사실 네가 쥐고 있어. 못 놓겠으면 최소한 묶여 있다는 건 인정하자.',
-   '오래 묶여 있던 데서 빠져나오는 중이야. 힘들고 흔들리겠지만 방향은 맞아. 여기서 되돌아가면 더 깊이 묶이니까 지금 결심 지켜.'],
-  [16,'탑','The Tower','🗼','붕괴 · 충격 · 각성',
-   '갑자기 판이 흔들려. 근데 무너지는 건 원래 금 가 있던 것들이야. 놀라는 건 나중에 하고 잃을 것과 지킬 것부터 빨리 구분해.',
-   '터질 거 알면서 겨우 붙들고 미루는 중이잖아. 버티면 넘어갈 것 같지? 대개는 시간 갈수록 손해만 커져. 미리 정리하면 충격은 절반이야.'],
-  [17,'별','The Star','⭐','희망 · 회복 · 영감',
-   '고비 지나고 조용히 회복되는 시기야. 화려하진 않아도 마음이 다시 서. 몰래 품고 있던 그 소망, 이번엔 길이 열리니까 접지 마.',
-   '기대가 식은 건 네가 약해서가 아니라 너무 크게 바라다 지쳐서야. 목표 잠깐 낮춰도 돼. 오늘 할 수 있는 거 하나만 해내면 다시 붙어.'],
-  [18,'달','The Moon','🌕','불안 · 불확실 · 무의식',
-   '지금 안개 속이야. 보이는 것도 들리는 말도 정확하지 않으니 결정은 미뤄. 그리고 그 불안, 사실보다 훨씬 부풀려져 있어.',
-   '안개가 걷히고 진실이 드러나. 알고 나면 오히려 마음이 놓일 거야. 이제 그 사실 위에서 방향 정하면 돼.'],
-  [19,'태양','The Sun','☀️','성공 · 활력 · 명확함',
-   '제일 밝은 카드야. 숨길 것 없이 드러내도 되고 하는 일마다 온기가 따라붙어. 결과 나오고 인정도 같이 오니까 눈치 보지 말고 나서.',
-   '잘될 거란 마음이 준비를 대신해주진 않아. 지금 들떠서 기본을 건너뛰고 있잖아. 김칫국 좀 덜 마시고 기본만 챙기면 다시 밝아져.'],
-  [20,'심판','Judgement','📯','결단 · 부활 · 부름',
-   '정리하고 다시 일어서라는 신호야. 미뤄둔 결정 내리기 딱 좋고, 한 번 접었던 일에 다시 기회가 오기도 해. 부르는 소리 그냥 넘기지 마.',
-   '과거의 선택을 계속 재판정에 올려놓고 있잖아. 그거 반성 아니고 자책이야. 그때의 너부터 용서해야 다음이 열려.'],
-  [21,'세계','The World','🌍','완성 · 성취 · 통합',
-   '한 바퀴가 온전히 끝나. 흩어져 있던 조각이 맞춰지고 다음 무대가 열려. 여기까지 온 너 인정하고, 마무리 인사까지 잘하면 더 좋은 시작이 와.',
-   '거의 다 왔는데 마지막 매듭에서 붙잡혀 있잖아. 완벽하게 끝내려다 못 끝내는 중이야. 일단 끝내, 완성도는 그다음 문제야.']
+  [0,'바보','The Fool','🎒','새로운 시작 · 순수 · 모험'],
+  [1,'마법사','The Magician','🪄','재능 · 실행력 · 자원'],
+  [2,'여사제','The High Priestess','🌙','직관 · 비밀 · 기다림'],
+  [3,'여황제','The Empress','🌷','풍요 · 돌봄 · 결실'],
+  [4,'황제','The Emperor','🏛','질서 · 책임 · 안정'],
+  [5,'교황','The Hierophant','⛪','배움 · 전통 · 조언'],
+  [6,'연인','The Lovers','💞','사랑 · 선택 · 결합'],
+  [7,'전차','The Chariot','🏇','추진력 · 의지 · 승리'],
+  [8,'힘','Strength','🦁','용기 · 인내 · 부드러움'],
+  [9,'은둔자','The Hermit','🏮','성찰 · 고독 · 탐구'],
+  [10,'운명의 수레바퀴','Wheel of Fortune','🎡','전환점 · 흐름 · 기회'],
+  [11,'정의','Justice','⚖️','공정 · 균형 · 결과'],
+  [12,'매달린 사람','The Hanged Man','🙃','관점 전환 · 멈춤 · 헌신'],
+  [13,'죽음','Death','💀','끝맺음 · 변화 · 재생'],
+  [14,'절제','Temperance','🏺','조화 · 균형 · 절도'],
+  [15,'악마','The Devil','😈','집착 · 유혹 · 속박'],
+  [16,'탑','The Tower','🗼','붕괴 · 충격 · 각성'],
+  [17,'별','The Star','⭐','희망 · 회복 · 영감'],
+  [18,'달','The Moon','🌕','불안 · 불확실 · 무의식'],
+  [19,'태양','The Sun','☀️','성공 · 활력 · 명확함'],
+  [20,'심판','Judgement','📯','결단 · 부활 · 부름'],
+  [21,'세계','The World','🌍','완성 · 성취 · 통합']
 ];
 
 /* ───────── 마이너 아르카나 4수트 × 14장 ───────── */
@@ -500,95 +463,28 @@ const SUITS = [
 const RANKS = ['에이스','2','3','4','5','6','7','8','9','10','시종','기사','여왕','왕'];
 
 /* 각 항목: [키워드, 정방향, 역방향] */
+/* 카드 키워드만 (풀이는 제미나이가 함) */
 const MINOR = {
-wands:[
- ['시작의 불씨','새로운 일에 불이 붙어. 지금 떠오른 그 생각이 씨앗이니까 미루지 말고 손대. 완성도 따지다 시작을 못 하는 게 제일 아까운 거야.','의욕이 안 나고 출발이 자꾸 밀려. 억지로 불붙이려 하면 더 지치니까 컨디션부터 챙겨. 안 되는 걸 정신력으로 밀어붙이는 게 늘 답은 아니야.'],
- ['계획과 시야','두 갈래 중 하나 골라야 할 때야. 눈앞의 이익 말고 멀리 보면 답 나와. 지금 정한 방향이 한동안 네 흐름을 결정하니까 대충 고르지 마.','계획만 예쁘게 다듬고 있잖아. 완벽한 계획 기다리다 기회 다 닫혀. 실행 가능한 걸로 골라서 오늘 한 칸이라도 움직여.'],
- ['확장과 기다림','뿌려둔 게 밖에서 자라는 중이야. 눈앞에 결과가 없다고 안 되는 게 아니야. 시야 좀 넓게 봐, 멀리서 오는 소식이 있어.','기다림이 길어지고 소식이 없어. 마냥 기다리는 건 인내가 아니라 방치야. 조건이나 방식에 문제 없는지 네가 먼저 확인해.'],
- ['축하와 안정','한 고비 넘긴 자리에서 같이 기뻐할 일이 생겨. 터전이 든든해지고 사람들과도 편해져. 잠깐 쉬면서 누려도 되는 때야, 죄책감 갖지 마.','자리가 아직 덜 여물었어. 축하 사진부터 찍지 말고 기반부터 다져. 겉모양만 갖춘 건 바람 한 번에 넘어가.'],
- ['경쟁과 마찰','여럿이 부딪히는데 나쁘지만은 않아. 경쟁 덕에 실력 늘고 네 위치도 분명해져. 피하지 말고 정면으로 붙어봐.','이겨도 남는 거 없는 소모전이야. 감정싸움으로 번지기 전에 빠지는 게 이득이야. 뭘 위해 싸우는지 대답 못 하면 그건 이길 이유도 없는 싸움이야.'],
- ['승리와 인정','노력 인정받고 앞에 나서게 돼. 자신 있게 드러내도 되고 사람들 지지도 따라와. 이 기세 다음 일로 그대로 이어가.','인정이 늦거나 자만이 발목 잡아. 결과만 앞세우다 과정에서 흘린 거 없는지 봐. 조용히 실력 더 쌓으면 기회는 곧 와.'],
- ['방어와 버팀','밀려와도 네 자리 지킬 힘 있어. 지금 위치가 유리하니까 물러서지 마. 버티는 것 자체가 이기는 방법인 판이야.','혼자 감당하다 지쳐가고 있잖아. 도움 청하는 것도 방어야, 그게 지는 거 아니고. 다 못 지킬 거면 뭘 지킬지부터 정해.'],
- ['빠른 진전','일이 갑자기 속도를 내. 기다리던 연락 오고 밀렸던 게 한꺼번에 풀려. 흐름 빠를 때 처리할 거 처리해, 이 속도 오래 안 가.','연락 엇갈리고 진행이 지체돼. 서두를수록 더 꼬이니까 순서 정리하고 하나씩 확인해. 급한 마음이 실수를 부르는 거야.'],
- ['끈기와 고비','상처는 있는데 아직 설 힘 남았어. 마지막 한 걸음 남은 자리에서 놓는 사람이 제일 아까워. 지금까지 버틴 게 곧 결과로 바뀌어.','지치고 예민해져서 다 의심하고 있잖아. 그건 이미 한계 왔다는 신호야. 쉬어야 다시 가, 정신력 문제가 아니야.'],
- ['과중한 짐','책임이 몰려서 어깨가 무거워. 다 안고 가려다 정작 중요한 걸 놓쳐. 지금 내려놔도 되는 것부터 골라내.','짐을 내려놓기 시작해. 나눠 맡기면 훨씬 빨라지고 마음도 가벼워져. 혼자 다 해야 한다는 생각부터 버려.'],
- ['호기심과 소식','새로운 소식이랑 배울 거리가 와. 모르는 거 겁 없이 물어보는 태도가 문을 열어. 작게 시작한 게 뜻밖에 커질 수 있어.','들뜨기만 하고 마무리가 없잖아. 벌여둔 것부터 정리해. 관심 흩어지면 1년 지나도 남는 게 없어.'],
- ['돌진과 모험','일단 저지르는 추진력이 통하는 때야. 속도가 무기니까 재는 시간 줄여. 낯선 데서 기회가 나와.','성급함이 사고 만들어. 확인 한 번이 큰 손해 막아주는데 그 한 번을 안 하잖아. 무모함이랑 용기는 다른 거야.'],
- ['자신감과 매력','당당한 태도가 사람을 끌어와. 하고 싶은 말 해도 되고 앞에 나서는 자리가 잘 맞아. 매력이 그대로 힘이 되는 시기야.','조급함이랑 질투가 판단 흐리고 있어. 남 속도랑 비교할수록 너만 닳아. 시선 밖에서 안으로 돌려.'],
- ['리더십과 비전','큰 그림 그리고 이끄는 자리야. 결단하면 신뢰가 붙고 따르는 사람도 생겨. 멀리 보는 계획 세우기 좋은 때야.','독선이랑 충동이 문제야. 네 말이 맞아도 듣는 귀가 없으면 아무도 안 따라와. 결정 전에 한 명 말이라도 들어.']
-],
-cups:[
- ['감정의 시작','마음이 열리는 때야. 새 인연이든 감정이든 잔잔히 차오르고 닫아뒀던 마음도 움직여. 느끼는 대로 표현해도 손해 안 봐.','마음이 막히고 공허해. 억지로 좋은 감정 만들려 하지 말고 지금의 무덤덤함을 인정해. 감정도 쉬어야 다시 차오르는 거야.'],
- ['교감과 결합','서로 알아보는 관계야. 표현하면 그대로 돌아오고 같이 하는 일도 잘 풀려. 신뢰가 차곡차곡 쌓이는 시기야.','한쪽만 기울어진 마음이야. 참는 걸 배려라고 부르지 마, 그거 그냥 쌓이는 거야. 오해 있으면 더 늦기 전에 풀어.'],
- ['우정과 축하','사람들 덕에 웃을 일이 생겨. 모임이랑 나눔이 힘이 되고 뜻밖의 인연도 이어져. 방에만 있지 말고 나가서 어울려.','사람에 치여서 정작 중요한 걸 놓치고 있잖아. 다 챙기려다 네 것부터 무너져. 거리 조절이 필요해.'],
- ['권태와 무심','솔직히 지금 지루한 거 맞잖아. 눈앞에 기회 와도 시큰둥한 건 기회가 별로라서가 아니라 네가 질린 거야. 새 거 찾기 전에 왜 질렸는지부터 봐.','다시 마음이 움직여. 놓칠 뻔한 제안이나 사람 붙잡을 수 있어. 닫아뒀던 문 한 번만 열어봐.'],
- ['상실과 아쉬움','잃은 것에 마음이 붙들려 있어. 슬픈 게 당연한 시기야, 억지로 괜찮은 척 안 해도 돼. 다만 뒤에 남아 있는 것도 분명히 있어.','슬픔 지나서 회복으로 가. 용서랑 정리가 시작되고 무게가 가벼워져. 이제 앞을 봐도 되는 때야.'],
- ['추억과 온정','옛 인연이나 그리운 기억이 찾아와. 순수한 마음이 위로가 되고 과거 인연이 도움을 주기도 해. 따뜻하게 받아.','과거에 갇혀서 지금을 못 살고 있잖아. 그때가 좋았던 게 아니라 지금이 힘든 거야. 그리움을 핑계로 오늘을 미루지 마.'],
- ['환상과 선택지','고를 게 너무 많아서 헷갈려. 달콤해 보이는 것 중 절반은 환상이니까 조건 하나씩 따져봐. 다 가지려다 아무것도 못 잡아.','현실이 또렷해져. 허황된 선택지 지우면 남는 답이 분명해. 이제 결정할 수 있어.'],
- ['떠남과 탐색','충분히 채웠는데도 허해서 길을 떠나. 이건 도망 아니야, 더 깊은 걸 찾는 거야. 두고 가는 것 너무 아쉬워하지 마.','미련에 돌아가거나 떠날지 말지 계속 맴돌아. 기준 없이 흔들리면 시간만 가. 뭘 얻으려는지부터 정해.'],
- ['만족과 소원','바라던 게 이뤄지는 카드야. 지금 가진 거 누려도 되고 원하는 거 말해도 되는 시기야. 마음이 편해져.','겉만 그럴듯한 만족이거나 욕심이 과해. 채워도 허하면 방향이 틀린 거야. 진짜 원한 게 뭐였는지 다시 물어봐.'],
- ['가정의 행복','따뜻한 관계가 완성돼. 함께여서 좋은 시간이 이어지고 마음 붙일 자리가 생겨. 가까운 사람한테 표현하기 좋은 때야.','겉으로만 화목하고 속으론 금 가 있잖아. 덮어두면 더 커져. 불편해도 지금 꺼내야 나중에 안 터져.'],
- ['감성과 영감','좋은 소식이나 영감이 와. 마음이 말랑해지고 표현하고 싶은 게 생겨. 떠오른 거 그냥 흘려보내지 말고 붙잡아.','감정 기복 크고 공상에 빠져 있어. 마음만 앞서고 실제로 한 건 없잖아. 작게라도 손을 대야 현실이 돼.'],
- ['낭만적 제안','마음 담은 제안이 들어와. 분위기가 부드러워지고 로맨틱한 흐름이 생겨. 받아들일지는 천천히 정해도 돼.','달콤한 말만 있고 실체가 없어. 말로만 잘하는 사람일 수 있어. 행동으로 확인되기 전엔 기대 키우지 마.'],
- ['공감과 포용','남의 마음 알아채는 힘이 있어. 위로가 큰 역할 하고 사람들이 너를 찾아와. 그 감수성이 지금은 무기야.','남 감정까지 대신 앓다가 네가 소모되고 있잖아. 착한 거 말고 지친 거야. 거리 두는 연습이 필요해.'],
- ['성숙한 감정','흔들려도 중심 잡는 어른의 태도야. 감정 다스려서 신뢰 얻고 사람들 사이 조율하는 자리가 잘 맞아.','감정을 억누르거나 반대로 상대를 감정으로 흔들고 있어. 참는 것도 조종하는 것도 결국 관계를 망쳐. 솔직한 게 제일 빨라.']
-],
-swords:[
- ['명료한 진실','흐릿하던 게 또렷해져. 판단이 서니까 미뤄둔 문제 지금 정리해. 진실 마주하는 게 시작이야.','판단 흐려지고 정보가 뒤엉켜 있어. 지금 내리는 결정은 나중에 후회할 확률이 높아. 사실 확인부터 하고 움직여.'],
- ['보류와 균형','결정 못 한 채 팽팽해. 눈 가린 채로는 답 안 나오니까 정보를 더 모아. 지금의 침묵도 하나의 선택이야.','회피 끝내고 결단할 때야. 어느 쪽이든 고르는 게 계속 미루는 것보단 나아. 정하고 나면 오히려 마음 편해져.'],
- ['상심과 아픈 말','마음 찌르는 사실이나 말이 있어. 아프지만 그게 진실이라 피할 수가 없어. 인정해야 아물기 시작해.','상처가 아물기 시작해. 용서랑 회복 쪽으로 가는 중이니까 서두르지 마. 시간이 해주는 몫이 있어.'],
- ['휴식과 회복','멈추고 쉬어야 하는 때야. 지금 멈추는 건 후퇴가 아니라 다음을 위한 준비야. 아무것도 안 하는 걸 죄책감 없이 해봐.','제대로 쉬지도 않고 다시 뛰고 있잖아. 이러다 더 길게 멈추게 돼. 몸이 보내는 신호 계속 무시하지 마.'],
- ['상처뿐인 승리','이겨도 씁쓸하게 남아. 얻는 것과 잃는 것 저울에 올려보면 답 나와. 꼭 이겨야 하는 싸움인지부터 물어봐.','갈등 끝나고 화해로 가. 먼저 손 내밀면 생각보다 쉽게 정리돼. 자존심은 안 남고 관계는 남아.'],
- ['벗어남과 이동','힘든 자리 떠나서 잔잔한 쪽으로 가. 도와주는 사람도 있고 흐름도 순해. 떠나는 걸 실패라고 부르지 마.','문제 안은 채로 자리만 옮기고 있잖아. 원인 두고 가면 그대로 따라와. 뭐 때문에 힘들었는지부터 정리해.'],
- ['전략과 은밀함','정면 승부보다 머리 쓸 때야. 다 보여주지 말고 필요한 만큼만 꺼내는 게 유리해. 대신 떳떳한 선은 지켜.','숨긴 게 드러나거나 계획이 새고 있어. 감출수록 손해만 커져. 지금 밝히면 수습되는데 더 끌면 못 막아.'],
- ['스스로 만든 속박','못 움직인다고 느끼는데 매듭 생각보다 느슨해. 널 묶은 건 상황이 아니라 두려움이야. 한 걸음만 떼봐, 생각보다 헐거워.','묶임이 풀리고 시야가 트여. 생각보다 자유롭다는 걸 알게 돼. 이제 원하는 방향으로 움직이면 돼.'],
- ['불안과 걱정','밤마다 커지는 근심이야. 실제보다 훨씬 부풀려져 있으니까 지금 판단은 미뤄. 혼자 곱씹을수록 괴물 돼.','걱정의 실체 확인하고 가벼워져. 말로 꺼내면 절반은 사라져. 막상 보면 감당할 만한 일이야.'],
- ['바닥과 끝','더 나빠질 게 없는 지점이야. 끝났다는 걸 인정하는 순간 진짜 끝나. 여기서부턴 올라갈 일만 남았어.','최악 지나서 회복 시작돼. 아직 힘 없어도 방향은 위쪽이야. 천천히 일어나면 돼.'],
- ['정보와 경계','살피고 알아보는 자세가 도움 돼. 꼼꼼함이 무기니까 자료 챙기고 기록 남겨. 지금은 눈치가 빠른 시기야.','말이 새거나 성급한 발언이 화 불러. 확실하지 않은 얘기 옮기지 마. 입단속이 곧 안전이야.'],
- ['저돌적 추진','거침없이 밀어붙이고 할 말 해. 속도로 상황 뚫을 수 있고 정면 돌파가 통해. 대신 뒷정리는 미리 준비해둬.','공격성이랑 무례함이 관계를 깨. 옳은 말도 상처 주면 남는 게 없어. 한 박자만 늦추면 같은 말도 먹혀.'],
- ['명석한 통찰','핵심을 꿰뚫어 봐. 감정 걷어내면 정확한 답 나오고 남의 말에 안 휘둘려. 판단 필요한 자리에 딱이야.','너무 차갑고 비판적이야. 옳은 말에도 온도가 필요해. 지적하기 전에 한 번만 이해해봐.'],
- ['원칙과 논리','기준 세워서 판단하면 신뢰 얻어. 공적인 일이나 문서 다루는 일에 유리해. 감정보다 규칙이 힘 쓰는 판이야.','독단이랑 권위가 문제야. 규칙 뒤에 숨어서 사람 누르고 있진 않은지 봐. 원칙도 결국 사람 쓰라고 있는 거야.']
-],
-pents:[
- ['실질적 기회','손에 잡히는 기회가 와. 돈이든 일이든 건강이든 실제로 도움 되는 시작이야. 작아 보여도 잡아두면 오래가.','기회 흘려보내거나 조급해서 그르쳐. 조건 다시 보고 서두르지 마. 놓친 것 같아도 다음은 또 와.'],
- ['균형 잡기','두 가지를 요령껏 굴리고 있어. 유연하게 움직이면 둘 다 해내. 완벽하게 하려 들지 말고 굴러가게만 해.','벌인 게 많아서 과부하야. 하나 내려놔야 나머지가 살아. 다 붙잡으면 다 놓치는 거 알잖아.'],
- ['협업과 실력','같이 만들면서 실력 인정받아. 역할 나누면 잘 굴러가고 결과도 좋아. 혼자 다 하려는 거 그거 자랑 아니야.','손발 안 맞고 기준이 달라. 사람 탓하기 전에 역할이랑 책임부터 정리해. 감정 문제가 아니라 구조 문제야.'],
- ['지킴과 저축','가진 거 단단히 지키는 시기야. 늘리는 것보다 안 잃는 게 중요해. 지금은 안정이 필요하니까 무리하지 마.','움켜쥐다 기회를 막고 있어. 아끼는 거랑 인색한 건 달라. 쓸 데 안 쓰면 결국 더 크게 나가.'],
- ['결핍과 소외','춥고 부족하다고 느끼는 때야. 혼자라는 생각이 상황을 더 시리게 만들어. 근데 도움은 생각보다 가까이 있어.','회복이 시작돼. 문 두드리기만 하면 되는데 자존심 때문에 안 두드리고 있잖아. 그거 하나만 넘기면 풀려.'],
- ['나눔과 후원','도움이 오가는 때야. 조건 분명하면 서로 좋은 거래가 돼. 받는 걸 너무 미안해하지 마.','한쪽만 유리한 거래야. 받는 쪽이면 갚을 수 있는 선까지만, 주는 쪽이면 한도를 정해. 관계 상하기 전에 정리해.'],
- ['기다림과 점검','씨앗은 자라는 중이니까 중간 점검만 해. 수확은 아직인데 방향은 맞아. 조바심이 제일 큰 적이야.','조급하게 거두려다 설익어. 아니다 싶으면 갈아엎는 것도 방법이야. 지금까지 들인 게 아까워서 붙들지 마.'],
- ['숙련과 성실','같은 일 꾸준히 다듬는 힘이 결과를 만들어. 지금은 화려한 성과보다 실력 쌓을 때야. 지루해도 반드시 남는 게 있어.','대충 하거나 지루함에 빠져 있어. 기본기 다시 안 잡으면 곧 티 나. 방식을 조금 바꿔보는 것도 방법이야.'],
- ['자립과 여유','스스로 이룬 풍요를 누려. 혼자여도 충분히 단단하고 그 여유가 매력이 돼. 너한테 쓰는 건 아끼지 마.','겉으로만 여유롭고 속은 불안하잖아. 보여주려고 쓰는 돈부터 줄이면 마음 편해져. 남 시선 말고 네 잔고 봐.'],
- ['안정된 기반','오래 갈 토대가 만들어져. 가족이든 재산이든 자리든 든든해지고 마음이 놓여. 장기 계획 세우기 좋은 때야.','돈이나 가족 문제로 마찰 생겨. 계산 분명히 하고 기록 남겨. 좋은 게 좋은 거라고 넘기면 나중에 더 커져.'],
- ['배움과 실속','실속 있는 공부나 작은 시작이 좋아. 차근차근 쌓는 방식이 잘 맞아. 지금 배우는 게 나중에 밥이 돼.','미루기랑 산만함이 발목 잡아. 계획은 많은데 실행이 없잖아. 오늘 할 몫만 정해서 끝내는 연습부터 해.'],
- ['꾸준함과 신뢰','느려도 확실하게 가. 약속 지키는 태도가 신뢰 만들고 그 신뢰가 기회를 데려와.','정체되고 지루해. 같은 방식만 고집하면 성장이 멈춰. 작은 변화 한 스푼만 넣어봐.'],
- ['현실적 돌봄','살림이랑 일 두루 챙기는 힘이 있어. 실질적인 도움 주고받으면서 주변이 안정돼. 그 능력이 곧 자산이야.','다 떠안다 지쳐. 과보호는 상대 몫까지 뺏는 거야. 나눠 맡기는 연습 좀 해.'],
- ['성취와 수완','현실 감각으로 이룬 안정이야. 사업이랑 재물 운 좋고 판단도 정확해. 지금 선택이 오래 갈 기반이 돼.','물질에만 매여서 완고해졌어. 숫자 밖의 것 계속 놓치면 결국 사람이 떠나. 유연함이 필요해.']
-]
+wands:['시작의 불씨','계획과 시야','확장과 기다림','축하와 안정','경쟁과 마찰','승리와 인정','방어와 버팀','빠른 진전','끈기와 고비','과중한 짐','호기심과 소식','돌진과 모험','자신감과 매력','리더십과 비전'],
+cups:['감정의 시작','교감과 결합','우정과 축하','권태와 무심','상실과 아쉬움','추억과 온정','환상과 선택지','떠남과 탐색','만족과 소원','가정의 행복','감성과 영감','낭만적 제안','공감과 포용','성숙한 감정'],
+swords:['명료한 진실','보류와 균형','상심과 아픈 말','휴식과 회복','상처뿐인 승리','벗어남과 이동','전략과 은밀함','스스로 만든 속박','불안과 걱정','바닥과 끝','정보와 경계','저돌적 추진','명석한 통찰','원칙과 논리'],
+pents:['실질적 기회','균형 잡기','협업과 실력','지킴과 저축','결핍과 소외','나눔과 후원','기다림과 점검','숙련과 성실','자립과 여유','안정된 기반','배움과 실속','꾸준함과 신뢰','현실적 돌봄','성취와 수완']
 };
-
-
-
-
-
-
-
-
 
 /* ───────── 덱 만들기 ───────── */
 const pad2 = n => (n < 10 ? '0' : '') + n;
 function buildDeck(){
   const deck = [];
   MAJOR.forEach(m=>{
-    deck.push({type:'major', num:m[0], name:m[1], en:m[2], sym:m[3], kw:m[4], up:m[5], rev:m[6],
+    deck.push({type:'major', num:m[0], name:m[1], en:m[2], sym:m[3], kw:m[4],
                img:'img/m' + pad2(m[0]) + '.jpg'});
   });
   SUITS.forEach(s=>{
-    MINOR[s.key].forEach((t, i)=>{
+    MINOR[s.key].forEach((kw, i)=>{
       deck.push({
         type:'minor', suit:s, rank:RANKS[i], rankNo:i+1,
         name:s.name + ' ' + RANKS[i], en:'', sym:s.sym,
-        kw:t[0], up:t[1], rev:t[2],
+        kw:kw,
         img:'img/' + s.code + pad2(i+1) + '.jpg'
       });
     });
@@ -599,10 +495,11 @@ const DECK = buildDeck();   // 78장
 
 /* ───────── 항목(무엇을 볼지) ───────── */
 const TOPICS = [
-  {key:'job',     icon:'💼', short:'직업운',  name:'직업·일운'},
-  {key:'love',    icon:'💗', short:'애정운',  name:'애정·연애운'},
-  {key:'marry',   icon:'💍', short:'결혼운',  name:'결혼·인연운'},
-  {key:'money',   icon:'💰', short:'금전운',  name:'금전·재물운'}
+  {key:'love',  icon:'💗', short:'애정운', sub:'상대 있음', name:'애정·연애운 (상대 있음)'},
+  {key:'love2', icon:'💘', short:'애정운', sub:'상대 없음', name:'애정·연애운 (상대 없음)'},
+  {key:'marry', icon:'💍', short:'결혼운', name:'결혼·인연운'},
+  {key:'job',   icon:'💼', short:'직업운', name:'직업·일운'},
+  {key:'money', icon:'💰', short:'금전운', name:'금전·재물운'}
 ];
 let topic = TOPICS[0];
 
@@ -616,6 +513,9 @@ const POS = {
   },
   love:{
     three:[['내 마음','상대의 마음','두 사람의 흐름'],['내가 품고 있는 감정','상대가 품은 감정','이대로 갔을 때 두 사람']],
+  },
+  love2:{
+    three:[['지금의 나','다가올 인연','만남의 흐름'],['연애에서 지금 내가 놓인 상태','앞으로 다가올 사람의 모습','그 인연이 닿는 시기와 방식']],
   },
   marry:{
     three:[['지금의 인연','넘어야 할 것','결혼의 흐름'],['현재 관계의 상태','결혼까지 넘어야 할 문제','이대로 갔을 때의 결혼운']],
@@ -650,7 +550,8 @@ function buildTopics(){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'topic' + (t.key === topic.key ? ' on' : '');
-    b.innerHTML = '<i>' + t.icon + '</i>' + t.short;
+    b.innerHTML = '<span class="tn"><i>' + t.icon + '</i>' + t.short + '</span>' +
+                  (t.sub ? '<span class="ts">' + t.sub + '</span>' : '');
     b.addEventListener('click', ()=>{
       topic = t;
       box.querySelectorAll('.topic').forEach(x=>x.classList.remove('on'));
@@ -665,6 +566,7 @@ const PLACEHOLDER = {
   general:'예) 요즘 제 상황이 어떤가요?',
   job:'예) 지금 회사를 옮겨도 될까요?',
   love:'예) 그 사람 마음은 어떤가요?',
+  love2:'예) 언제쯤 좋은 사람을 만날까요?',
   marry:'예) 올해 안에 결혼할 수 있을까요?',
   money:'예) 이 투자를 해도 괜찮을까요?'
 };
@@ -845,23 +747,287 @@ function showResult(){
 let lastChosen = [];
 
 
-/* ───────── 결과 복사 ───────── */
-function resultText(){
-  const q = $('question').value.trim();
-  const P = posOf();
-  const chosen = picked.map(i=>fanCards[i]);
-  const lines = ['🔮 이로재로타로 — ' + topic.name + ' · ' + spread.title];
-  if(q) lines.push('질문: ' + q);
-  lines.push('');
-  chosen.forEach((fc, i)=>{
-    lines.push('[' + P.pos[i] + '] ' + fc.card.sym + ' ' + fc.card.name +
-               ' (' + (fc.reversed ? '역방향' : '정방향') + ')');
-  });
-  if(lastAiText){
-    lines.push('');
-    lines.push(lastAiText);
+/* ───────── 풀이 영역을 이미지로 저장 ───────── */
+const IMG_W = 720, IMG_PAD = 26;
+const FONT = '"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+const fnt = (size, weight) => (weight || 400) + ' ' + size + 'px ' + FONT;
+
+function wrapLines(ctx, text, maxW){
+  const out = [];
+  let line = '';
+  for(const ch of String(text)){
+    const test = line + ch;
+    if(ctx.measureText(test).width > maxW && line){
+      if(ch === ' '){ out.push(line); line = ''; continue; }
+      out.push(line); line = ch;
+    } else line = test;
   }
-  return lines.join('\n');
+  out.push(line);
+  return out;
+}
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+
+/* 화면에 그려진 풀이(#aiBox)를 그대로 읽어 캔버스로 옮긴다 */
+function readAiBlocks(){
+  const box = $('aiBox');
+  const blocks = [];
+  box.childNodes.forEach(el=>{
+    if(el.nodeType !== 1) return;
+    const tag = el.tagName;
+    if(tag === 'H4') blocks.push({t:'h', text:el.textContent.trim()});
+    else if(tag === 'P') blocks.push({t:'p', text:el.textContent.trim()});
+    else if(tag === 'UL') el.querySelectorAll('li').forEach(li=>blocks.push({t:'li', text:li.textContent.trim()}));
+    else if(el.classList.contains('tw')){
+      const table = el.querySelector('table');
+      if(!table) return;
+      const head = [...table.querySelectorAll('thead th')].map(c=>c.textContent.trim());
+      const rows = [...table.querySelectorAll('tbody tr')].map(tr=>
+        [...tr.querySelectorAll('td')].map(c=>c.textContent.trim()));
+      blocks.push({t:'table', head:head, rows:rows});
+    }
+  });
+  return blocks;
+}
+
+function renderAiImage(withCards){
+  const blocks = readAiBlocks();
+  if(!blocks.length) return null;
+
+  const innerW = IMG_W - IMG_PAD*2;
+  const bodyW  = innerW - 36;
+  const m = document.createElement('canvas').getContext('2d');
+
+  // ── 머리말(항목·질문) ──
+  const q = $('question').value.trim();
+  m.font = fnt(25, 800);
+  const qLines = q ? wrapLines(m, '“' + q + '”', innerW - 20) : [];
+
+  // ── 카드 ──
+  const chosen = (typeof picked !== 'undefined' && picked.length)
+    ? picked.map(i=>fanCards[i]) : [];
+  const P = posOf();
+  const imgs = [...document.querySelectorAll('#spreadRow .cimg')];
+  const useCards = withCards !== false && chosen.length && imgs.length === chosen.length;
+  const cw = 168, ch = Math.round(cw * 1.723), cgap = 20;
+
+  let headH = 20 + 24 + qLines.length*34 + 10;
+  const cardsH = useCards ? (22 + ch + 24) : 0;
+
+  // 표 열 너비: 내용 길이 비율로 나눈다
+  const tableLayout = b=>{
+    m.font = fnt(15);
+    const n = b.head.length;
+    const wmax = new Array(n).fill(1);
+    [b.head, ...b.rows].forEach(r=>r.forEach((c,i)=>{
+      wmax[i] = Math.max(wmax[i], Math.min(m.measureText(c).width, 340));
+    }));
+    const sum = wmax.reduce((a,c)=>a+c, 0);
+    return wmax.map(w=>Math.max(90, (bodyW - 2) * w / sum));
+  };
+
+  // 풀이 패널 높이
+  let panelH = 22;
+  blocks.forEach(b=>{
+    if(b.t === 'h'){ m.font = fnt(19, 800); b._l = wrapLines(m, b.text, bodyW); panelH += 12 + b._l.length*28; }
+    else if(b.t === 'p'){ m.font = fnt(16); b._l = wrapLines(m, b.text, bodyW); panelH += 8 + b._l.length*27; }
+    else if(b.t === 'li'){ m.font = fnt(16); b._l = wrapLines(m, b.text, bodyW - 18); panelH += 6 + b._l.length*27; }
+    else {
+      b._w = tableLayout(b);
+      m.font = fnt(15, 800);
+      b._hh = Math.max(...b.head.map((c,i)=>wrapLines(m, c, b._w[i]-18).length)) * 24 + 16;
+      m.font = fnt(15);
+      b._rh = b.rows.map(r=>Math.max(...r.map((c,i)=>wrapLines(m, c, b._w[i]-18).length)) * 24 + 16);
+      panelH += 16 + b._hh + b._rh.reduce((a,c)=>a+c, 0);
+    }
+  });
+  panelH += 26;
+
+  const H = headH + cardsH + panelH + 40;
+
+  const S = 2;
+  const cv = document.createElement('canvas');
+  cv.width = IMG_W*S; cv.height = H*S;
+  const ctx = cv.getContext('2d');
+  ctx.scale(S, S);
+  ctx.textBaseline = 'top';
+
+  // 바탕(밤하늘)
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#1d1440'); bg.addColorStop(0.5, '#120c26'); bg.addColorStop(1, '#0b0718');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, IMG_W, H);
+
+  // 머리말
+  let y = 20;
+  ctx.textAlign = 'center';
+  ctx.font = fnt(15, 700); ctx.fillStyle = '#b6abdc';
+  ctx.fillText(topic.icon + ' ' + topic.name, IMG_W/2, y);
+  y += 24;
+  ctx.font = fnt(25, 800); ctx.fillStyle = '#e8c877';
+  qLines.forEach(l=>{ ctx.fillText(l, IMG_W/2, y); y += 34; });
+  y += 10;
+
+  // 카드
+  if(useCards){
+    const rowW = cw*chosen.length + cgap*(chosen.length-1);
+    let x = (IMG_W - rowW) / 2;
+    const top = y + 22;
+    chosen.forEach((fc, i)=>{
+      ctx.font = fnt(13, 700); ctx.fillStyle = '#e8c877';
+      ctx.fillText(P.pos[i], x + cw/2, y);
+      ctx.save();
+      roundRect(ctx, x, top, cw, ch, 8); ctx.clip();
+      const im = imgs[i];
+      if(im && im.complete && im.naturalWidth){
+        if(fc.reversed){
+          ctx.translate(x + cw/2, top + ch/2);
+          ctx.rotate(Math.PI);
+          ctx.drawImage(im, -cw/2, -ch/2, cw, ch);
+        } else ctx.drawImage(im, x, top, cw, ch);
+      } else { ctx.fillStyle = '#2b1f63'; ctx.fillRect(x, top, cw, ch); }
+      ctx.restore();
+      roundRect(ctx, x, top, cw, ch, 8);
+      ctx.strokeStyle = '#a98f47'; ctx.lineWidth = 2; ctx.stroke();
+      if(fc.reversed){
+        ctx.font = fnt(12, 800); ctx.fillStyle = '#e8907a';
+        ctx.fillText('역방향', x + cw/2, top + ch + 6);
+      }
+      x += cw + cgap;
+    });
+    y = top + ch + 24;
+  }
+
+  // 풀이 패널
+  const panelY = y;
+  roundRect(ctx, IMG_PAD, panelY, innerW, panelH, 16);
+  const g = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
+  g.addColorStop(0, '#241a4d'); g.addColorStop(1, '#2e2260');
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = '#a98f47'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  ctx.textAlign = 'left';
+  y = panelY + 22;
+  const x0 = IMG_PAD + 18;
+  blocks.forEach(b=>{
+    if(b.t === 'h'){
+      y += 12;
+      ctx.font = fnt(19, 800); ctx.fillStyle = '#e8c877';
+      b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 28; });
+    } else if(b.t === 'p'){
+      y += 8;
+      ctx.font = fnt(16); ctx.fillStyle = '#e4dcff';
+      b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 27; });
+    } else if(b.t === 'li'){
+      y += 6;
+      ctx.font = fnt(16); ctx.fillStyle = '#e4dcff';
+      ctx.fillText('·', x0, y);
+      b._l.forEach(l=>{ ctx.fillText(l, x0 + 18, y); y += 27; });
+    } else {
+      y += 16;
+      let cx = x0;
+      ctx.fillStyle = 'rgba(232,200,119,.13)';
+      ctx.fillRect(cx, y, b._w.reduce((a,c)=>a+c,0), b._hh);
+      b.head.forEach((c, i)=>{
+        ctx.strokeStyle = '#3c2f74'; ctx.lineWidth = 1;
+        ctx.strokeRect(cx, y, b._w[i], b._hh);
+        ctx.font = fnt(15, 800); ctx.fillStyle = '#e8c877';
+        let ty = y + 8;
+        wrapLines(ctx, c, b._w[i]-18).forEach(l=>{ ctx.fillText(l, cx + 9, ty); ty += 24; });
+        cx += b._w[i];
+      });
+      y += b._hh;
+      b.rows.forEach((r, ri)=>{
+        cx = x0;
+        if(ri % 2 === 1){
+          ctx.fillStyle = 'rgba(0,0,0,.16)';
+          ctx.fillRect(cx, y, b._w.reduce((a,c)=>a+c,0), b._rh[ri]);
+        }
+        r.forEach((c, i)=>{
+          ctx.strokeStyle = '#3c2f74'; ctx.lineWidth = 1;
+          ctx.strokeRect(cx, y, b._w[i], b._rh[ri]);
+          ctx.font = fnt(15); ctx.fillStyle = '#e4dcff';
+          let ty = y + 8;
+          wrapLines(ctx, c, b._w[i]-18).forEach(l=>{ ctx.fillText(l, cx + 9, ty); ty += 24; });
+          cx += b._w[i];
+        });
+        y += b._rh[ri];
+      });
+    }
+  });
+  return cv;
+}
+
+function imageFileName(){
+  const d = new Date();
+  const p = v => (v < 10 ? '0' : '') + v;
+  return '이로재로타로_' + topic.short + '_' +
+         p(d.getMonth()+1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '.png';
+}
+
+async function saveImage(){
+  let cv = renderAiImage(true);
+  if(!cv){ toast('아직 풀이가 안 나왔어요'); return; }
+  const toBlob = c => new Promise(res=>{ try{ c.toBlob(res, 'image/png'); }catch(e){ res(null); } });
+  let blob = await toBlob(cv);
+  if(!blob){
+    // 카드 그림 때문에 막히는 환경(로컬 파일 등)에서는 글자만이라도 저장되게
+    cv = renderAiImage(false);
+    blob = cv ? await toBlob(cv) : null;
+  }
+  if(!blob){ toast('이미지를 만들지 못했어요'); return; }
+
+  const name = imageFileName();
+  const isPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // 1) 폰이면 공유 시트로 (사진 저장·카톡 전송 모두 여기서)
+  if(isPhone){
+    try{
+      const file = new File([blob], name, {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file]});
+        return;
+      }
+    }catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+
+  // 2) PC면 저장 위치를 고르는 창을 바로 띄운다
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: name,
+        types: [{description:'PNG 이미지', accept:{'image/png':['.png']}}]
+      });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      toast('이미지로 저장했어요');
+      return;
+    }catch(e){ if(e && e.name === 'AbortError') return; }   // 사용자가 취소
+  }
+
+  // 3) 그 외에는 바로 다운로드
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    toast('이미지로 저장했어요');
+    return;
+  }catch(e){}
+  // 4) 그래도 안 되면 새 탭에 띄워서 길게 눌러 저장
+  try{
+    const w = window.open('');
+    if(w){ w.document.write('<img src="' + cv.toDataURL('image/png') + '" style="width:100%">'); toast('새 탭에서 길게 눌러 저장해주세요'); }
+    else toast('저장이 막혔어요. 팝업 허용을 켜주세요');
+  }catch(e){ toast('저장에 실패했어요'); }
 }
 
 let toastTimer = null;
@@ -872,23 +1038,6 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
 }
-function copyResult(){
-  const text = resultText();
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(()=>toast('결과를 복사했어요'), fallbackCopy);
-  } else fallbackCopy();
-  function fallbackCopy(){
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try{ document.execCommand('copy'); toast('결과를 복사했어요'); }
-    catch(e){ toast('복사에 실패했어요'); }
-    document.body.removeChild(ta);
-  }
-}
-
 /* ───────── 제미나이 전문가 풀이 (집 PC 중계 서버 경유) ───────── */
 // 중계 서버 주소. 터널(ngrok 고정주소)을 켜면 여기에 넣어두면 모두가 쓸 수 있다.
 // 예) 'https://tarot-bamhobak.ngrok-free.app'
@@ -955,7 +1104,7 @@ async function askAI(){
   const box = $('aiBox');
   const title = '';
   box.classList.add('on');
-  box.innerHTML = title + '<p class="ai-wait">이로재로타로 마스터가 심각한 표정으로 카드들을 살펴보고 있어요.<br>20~40초 정도 걸려요.</p>';
+  box.innerHTML = title + '<p class="ai-wait">타로마스터가 심각한 표정으로 카드들을 살펴보고 있어요.<br>30~40초정도 걸려요.</p>';
   const body = {
     question: $('question').value.trim(),
     topic: topic.name,
@@ -1037,7 +1186,7 @@ $('pvFlip').addEventListener('click', flipPreview);
 $('pvCancel').addEventListener('click', closePreview);
 $('backBtn').addEventListener('click', goIntro);
 $('againBtn').addEventListener('click', goIntro);
-$('copyBtn').addEventListener('click', copyResult);
+$('copyBtn').addEventListener('click', saveImage);
 $('question').addEventListener('keydown', e=>{ if(e.key === 'Enter') goPick(); });
 
 const helpOverlay = $('helpOverlay');
