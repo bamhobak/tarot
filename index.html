@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.44
+  @version v1.0.45
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -319,6 +319,18 @@
     background:linear-gradient(180deg,#f0d68d,#d3ac52);color:#2a1d05;
     border:none;border-radius:10px;cursor:pointer;font-family:inherit;
   }
+  /* 폰에서 길게 눌러 저장하는 화면 */
+  .imgsheet .modal{padding:14px;}
+  .imgsheet .ishint{
+    font-size:13.5px;color:var(--gold);text-align:center;margin:2px 0 10px;
+  }
+  .imgsheet img{width:100%;border-radius:10px;display:block;}
+  .imgsheet .close{
+    width:100%;margin-top:12px;padding:12px;font-size:15px;font-weight:700;
+    font-family:inherit;cursor:pointer;border:none;border-radius:10px;
+    background:linear-gradient(180deg,#f0d68d,#d3ac52);color:#2a1d05;
+  }
+
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
     background:rgba(20,14,44,.95);border:1px solid var(--gold-dim);color:var(--gold);
@@ -418,7 +430,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.44</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.45</div>
   </div>
 </div>
 
@@ -852,7 +864,8 @@ function renderAiImage(withCards){
 
   const H = headH + cardsH + panelH + 40;
 
-  const S = 2;
+  // 폰에서는 2배로 그리면 인코딩이 오래 걸려서 1.5배로
+  const S = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1.5 : 2;
   const cv = document.createElement('canvas');
   cv.width = IMG_W*S; cv.height = H*S;
   const ctx = cv.getContext('2d');
@@ -972,6 +985,9 @@ function imageFileName(){
 }
 
 async function saveImage(){
+  toast('이미지 만드는 중…');
+  await new Promise(r=>setTimeout(r, 40));      // 버튼이 먼저 반응하게
+
   let cv = renderAiImage(true);
   if(!cv){ toast('아직 풀이가 안 나왔어요'); return; }
   const toBlob = c => new Promise(res=>{ try{ c.toBlob(res, 'image/png'); }catch(e){ res(null); } });
@@ -986,8 +1002,8 @@ async function saveImage(){
   const name = imageFileName();
   const isPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // 1) 폰이면 공유 시트로 (사진 저장·카톡 전송 모두 여기서)
   if(isPhone){
+    // 1) 공유 시트가 되면 그걸로 (사진 저장·카톡 전송 모두 여기서)
     try{
       const file = new File([blob], name, {type:'image/png'});
       if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -995,9 +1011,12 @@ async function saveImage(){
         return;
       }
     }catch(e){ if(e && e.name === 'AbortError') return; }
+    // 2) 폰 브라우저는 다운로드를 씹는 경우가 많아, 그림을 띄워 길게 눌러 저장하게 한다
+    showImageSheet(blob);
+    return;
   }
 
-  // 2) PC면 저장 위치를 고르는 창을 바로 띄운다
+  // PC — 저장 위치를 고르는 창
   if(window.showSaveFilePicker){
     try{
       const handle = await window.showSaveFilePicker({
@@ -1009,10 +1028,8 @@ async function saveImage(){
       await w.close();
       toast('이미지로 저장했어요');
       return;
-    }catch(e){ if(e && e.name === 'AbortError') return; }   // 사용자가 취소
+    }catch(e){ if(e && e.name === 'AbortError') return; }
   }
-
-  // 3) 그 외에는 바로 다운로드
   try{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1020,15 +1037,29 @@ async function saveImage(){
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
     toast('이미지로 저장했어요');
-    return;
-  }catch(e){}
-  // 4) 그래도 안 되면 새 탭에 띄워서 길게 눌러 저장
-  try{
-    const w = window.open('');
-    if(w){ w.document.write('<img src="' + cv.toDataURL('image/png') + '" style="width:100%">'); toast('새 탭에서 길게 눌러 저장해주세요'); }
-    else toast('저장이 막혔어요. 팝업 허용을 켜주세요');
-  }catch(e){ toast('저장에 실패했어요'); }
+  }catch(e){ showImageSheet(blob); }
 }
+
+/* 폰용 — 만든 그림을 그대로 띄워서 길게 눌러 저장하게 한다 */
+function showImageSheet(blob){
+  const url = URL.createObjectURL(blob);
+  const ov = document.createElement('div');
+  ov.className = 'overlay show imgsheet';
+  ov.innerHTML =
+    '<div class="modal">' +
+      '<p class="ishint">그림을 <b>길게 눌러</b> [이미지 저장]을 선택하세요.</p>' +
+      '<img src="' + url + '" alt="타로 결과">' +
+      '<button class="close">닫기</button>' +
+    '</div>';
+  ov.querySelector('.close').addEventListener('click', ()=>{
+    ov.remove(); URL.revokeObjectURL(url);
+  });
+  ov.addEventListener('click', e=>{
+    if(e.target === ov){ ov.remove(); URL.revokeObjectURL(url); }
+  });
+  document.body.appendChild(ov);
+}
+
 
 let toastTimer = null;
 function toast(msg){
