@@ -641,6 +641,10 @@ def _html_to_markdown(html: str) -> str:
             self._list_type_stack = []  # 'ol' | 'ul' per nesting level
             self._ol_counters     = []  # item counter per ol level
             self._prev_ol_counter = 0   # 이전 <ol> 닫힐 때의 카운터 (연속 <ol> 대응)
+            # 표(table) 변환용 — 제미나이가 요약 표를 주면 마크다운 표로 바꾼다
+            self._table = None   # 행 목록
+            self._row = None     # 현재 행
+            self._cell = None    # 현재 칸
 
         def _in_bq(self): return self._bq_depth > 0
         def _in_li(self): return self._li_depth > 0
@@ -653,6 +657,17 @@ def _html_to_markdown(html: str) -> str:
         def handle_starttag(self, tag, attrs):
             self._stack.append(tag)
             t = tag.lower()
+
+            # ── 표 안에서는 별도 수집 ──
+            if t == 'table':
+                self._table = []
+                return
+            if self._table is not None:
+                if t == 'tr':
+                    self._row = []
+                elif t in ('td', 'th'):
+                    self._cell = []
+                return
 
             if t == 'h1':
                 self._reset_ol_seq(); self.out.append('\n# ')
@@ -707,6 +722,31 @@ def _html_to_markdown(html: str) -> str:
             if self._stack and self._stack[-1] == tag:
                 self._stack.pop()
             t = tag.lower()
+
+            # ── 표 닫을 때 마크다운 표로 뱉는다 ──
+            if self._table is not None:
+                if t in ('td', 'th'):
+                    if self._cell is not None and self._row is not None:
+                        self._row.append(' '.join(''.join(self._cell).split()))
+                    self._cell = None
+                    return
+                if t == 'tr':
+                    if self._row:
+                        self._table.append(self._row)
+                    self._row = None
+                    return
+                if t == 'table':
+                    rows, self._table = self._table, None
+                    if rows:
+                        w = max(len(r) for r in rows)
+                        rows = [r + [''] * (w - len(r)) for r in rows]
+                        self.out.append('\n\n| ' + ' | '.join(rows[0]) + ' |')
+                        self.out.append('\n| ' + ' | '.join(['---'] * w) + ' |')
+                        for r in rows[1:]:
+                            self.out.append('\n| ' + ' | '.join(r) + ' |')
+                        self.out.append('\n')
+                    return
+                return
             if t in ('h1', 'h2', 'h3', 'h4'): self.out.append('\n')
             elif t in ('strong', 'b'): self.out.append('**')
             elif t in ('em', 'i'):     self.out.append('*')
@@ -730,15 +770,20 @@ def _html_to_markdown(html: str) -> str:
             elif t in ('p', 'div'): self.out.append('\n')
 
         def handle_data(self, data):
+            if self._cell is not None:
+                self._cell.append(data)
+                return
+            if self._table is not None:
+                return          # 표 안의 자투리 공백은 버린다
             self.out.append(data)
 
         def handle_entityref(self, name):
             import html as _h
-            self.out.append(_h.unescape(f'&{name};'))
+            self.handle_data(_h.unescape(f'&{name};'))
 
         def handle_charref(self, name):
             import html as _h
-            self.out.append(_h.unescape(f'&#{name};'))
+            self.handle_data(_h.unescape(f'&#{name};'))
 
     conv = _Conv()
     conv.feed(html)
