@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.16
+  @version v1.0.17
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -157,12 +157,6 @@
     background:#f3ead3;
   }
   .front.rev .cimg{transform:rotate(180deg);}
-  /* 역방향 표시(카드 위 작은 배지) — 그림은 뒤집혀도 배지는 바로 보이게 */
-  .front .rvmark{
-    position:absolute;left:0;right:0;bottom:0;
-    font-size:9px;font-weight:800;text-align:center;padding:2px 0 3px;
-    background:rgba(138,74,55,.92);color:#ffe3d8;letter-spacing:1px;
-  }
 
   /* ── 2단계: 카드 펼치기(부채꼴) ── */
   #pickStage{display:none;}
@@ -386,7 +380,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.16</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.17</div>
   </div>
 </div>
 
@@ -1010,7 +1004,6 @@ function buildSpreads(){
 function faceHTML(card, reversed){
   return '<div class="face front' + (reversed ? ' rev' : '') + '">' +
          '<img class="cimg" src="' + card.img + '" alt="' + card.name + '" draggable="false">' +
-         (reversed ? '<div class="rvmark">역방향</div>' : '') +
          '</div>';
 }
 // 카드를 눌렀을 때 그림이 바로 뜨도록, 펼치기 화면에서 78장을 천천히 미리 받아둔다
