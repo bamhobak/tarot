@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<!--
+  이로재로타로 (Tarot Reading)
+  @version v1.0.10
+  질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
+  78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
+  카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
+-->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이로재로타로</title>
+<style>
+  :root{
+    --bg:#120c26;
+    --bg2:#1d1440;
+    --panel:#241a4d;
+    --panel2:#2e2260;
+    --gold:#e8c877;
+    --gold-dim:#a98f47;
+    --text:#efe9ff;
+    --sub:#b6abdc;
+    --line:#3c2f74;
+    --accent:#8b6cf0;
+    --rev:#e8907a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.75), transparent 60%),
+      radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,.6), transparent 60%),
+      radial-gradient(1px 1px at 33% 62%, rgba(255,255,255,.5), transparent 60%),
+      radial-gradient(1px 1px at 88% 74%, rgba(255,255,255,.65), transparent 60%),
+      radial-gradient(1px 1px at 58% 34%, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(1px 1px at 22% 88%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(120% 80% at 50% 0%, var(--bg2) 0%, var(--bg) 60%, #0b0718 100%);
+    background-attachment:fixed;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+    padding:12px 12px 32px;
+  }
+
+  header{
+    width:100%;max-width:460px;text-align:center;
+    border-bottom:1px solid var(--line);
+    padding-bottom:10px;margin-bottom:14px;position:relative;
+  }
+  header h1{
+    font-size:23px;margin:4px 0;letter-spacing:2px;
+    color:var(--gold);text-shadow:0 0 14px rgba(232,200,119,.35);
+  }
+  header p{font-size:12px;color:var(--sub);margin:0;}
+  .help-btn{
+    position:absolute;right:0;top:2px;
+    background:none;border:1.5px solid var(--line);
+    border-radius:50%;width:30px;height:30px;
+    font-size:15px;font-weight:bold;cursor:pointer;color:var(--sub);
+  }
+
+  .wrap{width:100%;max-width:460px;}
+
+  /* ── 1단계: 질문 · 스프레드 선택 ── */
+  .panel{
+    background:linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
+    border:1px solid var(--line);border-radius:16px;padding:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .label{font-size:12px;color:var(--sub);margin:0 0 6px 2px;font-weight:600;}
+  #question{
+    width:100%;padding:12px 13px;font-size:15px;font-family:inherit;
+    background:rgba(0,0,0,.28);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;outline:none;
+  }
+  #question::placeholder{color:#8a7fb5;}
+  #question:focus{border-color:var(--accent);}
+
+  .spreads{display:flex;gap:8px;margin-top:14px;}
+  .spread{
+    flex:1 1 0;padding:11px 4px;border-radius:12px;cursor:pointer;
+    background:rgba(0,0,0,.22);border:1.5px solid var(--line);
+    text-align:center;font-family:inherit;color:var(--sub);
+    transition:.15s;
+  }
+  .spread b{display:block;font-size:14px;color:var(--text);margin-bottom:3px;}
+  .spread span{font-size:11px;}
+  .spread.on{border-color:var(--gold);background:rgba(232,200,119,.12);}
+  .spread.on b{color:var(--gold);}
+
+  .primary{
+    width:100%;margin-top:16px;padding:14px;font-size:16px;font-weight:800;
+    font-family:inherit;letter-spacing:1px;cursor:pointer;
+    background:linear-gradient(180deg,#f0d68d,#d3ac52);color:#2a1d05;
+    border:none;border-radius:12px;
+    box-shadow:0 6px 18px rgba(232,200,119,.25);
+  }
+  .primary:active{transform:translateY(1px);}
+  .ghost{
+    padding:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;
+    background:rgba(255,255,255,.06);color:var(--text);
+    border:1px solid var(--line);border-radius:12px;
+  }
+  .btn-row{display:flex;gap:8px;margin-top:14px;}
+  .btn-row .ghost{flex:1 1 0;}
+
+  /* ── 카드 공통 ── */
+  .card{
+    position:relative;border-radius:9px;
+    perspective:800px;
+  }
+  .card .inner{
+    position:relative;width:100%;height:100%;
+    transition:transform .6s cubic-bezier(.4,.1,.2,1);
+    transform-style:preserve-3d;
+  }
+  .card.flipped .inner{transform:rotateY(180deg);}
+  .face{
+    position:absolute;inset:0;border-radius:9px;
+    -webkit-backface-visibility:hidden;backface-visibility:hidden;
+    overflow:hidden;
+  }
+  .back{
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 6px, transparent 6px 12px),
+      linear-gradient(160deg,#4b3aa0 0%,#2b1f63 55%,#1b1244 100%);
+    border:2px solid var(--gold-dim);
+    display:flex;align-items:center;justify-content:center;
+    color:rgba(232,200,119,.85);
+    box-shadow:inset 0 0 0 3px rgba(232,200,119,.14);
+  }
+  .back .mark{font-size:1.6em;filter:drop-shadow(0 0 6px rgba(232,200,119,.5));}
+  /* 앞면 = 라이더-웨이트(1909) 원화 이미지 */
+  .front{
+    transform:rotateY(180deg);
+    background:#f3ead3;
+    border:2px solid var(--gold-dim);color:#2b2140;
+  }
+  .front .cimg{
+    display:block;width:100%;height:100%;object-fit:cover;
+    background:#f3ead3;
+  }
+  .front.rev .cimg{transform:rotate(180deg);}
+  /* 역방향 표시(카드 위 작은 배지) — 그림은 뒤집혀도 배지는 바로 보이게 */
+  .front .rvmark{
+    position:absolute;left:0;right:0;bottom:0;
+    font-size:9px;font-weight:800;text-align:center;padding:2px 0 3px;
+    background:rgba(138,74,55,.92);color:#ffe3d8;letter-spacing:1px;
+  }
+
+  /* ── 2단계: 카드 펼치기(부채꼴) ── */
+  #pickStage{display:none;}
+  .pick-head{text-align:center;margin-bottom:6px;}
+  .pick-head .q{font-size:13px;color:var(--gold);min-height:18px;}
+  .pick-head .cnt{font-size:13px;color:var(--sub);margin-top:2px;}
+  .fan-outer{
+    height:calc(624px * var(--fanScale,1));
+    display:flex;justify-content:center;align-items:flex-start;
+    margin-top:4px;
+  }
+  /* 78장을 360° 원형으로 둘러 놓는다 */
+  .fan{
+    position:relative;width:624px;height:624px;
+    transform:scale(var(--fanScale,1));transform-origin:top center;
+  }
+  .fan .card{
+    position:absolute;left:50%;top:8px;
+    width:58px;height:100px;margin-left:-29px;
+    transform-origin:50% 304px;      /* 원의 중심 = 컨테이너 정중앙 */
+    cursor:pointer;transition:transform .2s, filter .2s, opacity .25s;
+  }
+  .fan .card .back{border-radius:8px;}
+  /* 78장이 겹쳐 있으므로, 올려둔 카드를 살짝 띄워 어떤 카드를 고르는지 보이게 */
+  .fan .card:hover{filter:brightness(1.3);z-index:200 !important;}
+  .fan .card.preview{
+    filter:brightness(1.45) drop-shadow(0 0 14px rgba(232,200,119,.95));
+    z-index:300 !important;
+  }
+
+  /* ── 카드 미리보기 (선택 확정 전) ── */
+  .preview{display:none;margin:10px auto 0;max-width:340px;
+    background:var(--panel);border:1px solid var(--gold-dim);border-radius:14px;
+    padding:14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.45);}
+  .preview.on{display:block;animation:pvIn .25s ease-out;}
+  @keyframes pvIn{from{opacity:0;transform:translateY(8px);}}
+  .preview .pv-card{display:flex;justify-content:center;}
+  .preview .pv-card .card{width:118px;height:203px;}
+  .preview .pv-name{margin-top:10px;font-size:15px;font-weight:800;color:var(--gold);}
+  .preview .pv-name.rv{color:var(--rev);}
+  .preview .pv-kw{margin-top:3px;font-size:12.5px;color:var(--sub);}
+  .preview .pv-btns{display:flex;gap:8px;margin-top:12px;}
+  .preview .pv-btns button{flex:1 1 0;margin:0;}
+  .fan .card.dealt{animation:deal .45s backwards;}
+  @keyframes deal{
+    from{opacity:0;transform:translateY(120px) rotate(0deg) scale(.7);}
+  }
+  .fan .card.picked{filter:brightness(1.35) drop-shadow(0 0 12px rgba(232,200,119,.8));}
+  .fan .card.dim{opacity:.4;pointer-events:none;}
+  .shuffling .fan .card{animation:shuf .5s infinite ease-in-out;}
+  @keyframes shuf{
+    0%,100%{filter:brightness(1);}
+    50%{filter:brightness(1.25);}
+  }
+
+  /* ── 3단계: 결과 ── */
+  #resultStage{display:none;}
+  .spread-row{
+    display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0 16px;
+  }
+  .slot{display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .slot .pos{font-size:11px;color:var(--gold);font-weight:700;}
+  .slot .card{width:var(--cw);height:calc(var(--cw) * 1.723);}
+  .slot .revtag{
+    font-size:10px;color:var(--rev);font-weight:700;height:13px;
+  }
+  /* 아직 안 연 카드 — 눌러서 한 장씩 열기 */
+  .slot.closed .card{cursor:pointer;animation:tap 1.8s infinite ease-in-out;}
+  .slot.closed .card:hover{filter:brightness(1.25);}
+  @keyframes tap{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-6px);}
+  }
+  .open-hint{
+    text-align:center;font-size:12.5px;color:var(--gold);
+    margin:6px 0 2px;min-height:17px;
+  }
+
+  .read{
+    background:linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
+    border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-bottom:10px;
+    opacity:0;transform:translateY(8px);
+    animation:rise .45s forwards;
+  }
+  @keyframes rise{to{opacity:1;transform:none;}}
+  .read h3{
+    margin:0 0 2px;font-size:16px;color:var(--gold);
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .read h3 .badge{
+    font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;
+    background:rgba(139,108,240,.25);color:#cbbcff;border:1px solid #5b45a8;
+  }
+  .read h3 .badge.rv{background:rgba(232,144,122,.18);color:#f3b7a6;border-color:#8a4a37;}
+  .read .posline{font-size:11px;color:var(--sub);margin-bottom:8px;}
+  .read .kw{font-size:12px;color:#d9cdff;margin:0 0 6px;}
+  .read p{font-size:14px;line-height:1.65;color:#e4dcff;margin:0;}
+  .summary{
+    border:1px dashed var(--gold-dim);border-radius:14px;padding:14px;
+    background:rgba(232,200,119,.07);margin-bottom:4px;
+  }
+  .summary h3{margin:0 0 6px;font-size:15px;color:var(--gold);}
+  .summary p{margin:0;font-size:14px;line-height:1.65;color:#f0e8ff;}
+  .qshow{font-size:13px;color:var(--gold);text-align:center;margin-bottom:10px;min-height:18px;}
+
+  /* ── 모달 ── */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:none;align-items:center;justify-content:center;padding:16px;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:linear-gradient(180deg,#241a4d,#1a1238);
+    border:1px solid var(--line);
+    border-radius:16px;max-width:420px;width:100%;
+    max-height:88vh;overflow-y:auto;padding:22px;
+  }
+  .modal h2{margin-top:0;text-align:center;color:var(--gold);}
+  .modal p{font-size:13px;line-height:1.7;color:#ded6ff;}
+  .modal .legend{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13px;}
+  .modal .close{
+    width:100%;margin-top:14px;padding:12px;font-size:16px;font-weight:700;
+    background:linear-gradient(180deg,#f0d68d,#d3ac52);color:#2a1d05;
+    border:none;border-radius:10px;cursor:pointer;font-family:inherit;
+  }
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:rgba(20,14,44,.95);border:1px solid var(--gold-dim);color:var(--gold);
+    padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;
+    opacity:0;pointer-events:none;transition:.25s;z-index:60;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>이로재로타로</h1>
+  <p>별핑달핑 여러분, 진지하게 해당 질문을 가슴에 품고 카드를 뽑아보세요</p>
+  <button class="help-btn" id="helpBtn">?</button>
+</header>
+
+<div class="wrap">
+
+  <!-- 1단계 -->
+  <div id="introStage">
+    <div class="panel">
+      <p class="label">무엇이 궁금하신가요?</p>
+      <input id="question" type="text" maxlength="40" placeholder="예) 이번 달 일 운은 어떨까요?">
+      <p class="label" style="margin-top:16px;">스프레드 고르기</p>
+      <div class="spreads" id="spreads"></div>
+      <button class="primary" id="shuffleBtn">🔮 카드 섞기</button>
+    </div>
+  </div>
+
+  <!-- 2단계 -->
+  <div id="pickStage">
+    <div class="pick-head">
+      <div class="q" id="pickQ"></div>
+      <div class="cnt" id="pickCnt"></div>
+    </div>
+    <div class="fan-outer"><div class="fan" id="fan"></div></div>
+
+    <!-- 카드를 누르면 먼저 보여주고, 확정 버튼으로 선택 -->
+    <div class="preview" id="preview">
+      <div class="pv-card"><div class="card"><div class="inner" id="pvFace"></div></div></div>
+      <div class="pv-name" id="pvName"></div>
+      <div class="pv-kw" id="pvKw"></div>
+      <div class="pv-btns">
+        <button class="ghost" id="pvCancel">다시 고르기</button>
+        <button class="ghost" id="pvFlip">↕ 뒤집기</button>
+      </div>
+      <div class="pv-btns">
+        <button class="primary" id="pvOk">이 카드로 선택</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="ghost" id="backBtn">← 처음으로</button>
+      <button class="ghost" id="reshuffleBtn">다시 섞기</button>
+    </div>
+  </div>
+
+  <!-- 3단계 -->
+  <div id="resultStage">
+    <div class="qshow" id="resQ"></div>
+    <div class="spread-row" id="spreadRow"></div>
+    <div class="open-hint" id="openHint"></div>
+    <div id="readings"></div>
+    <div class="btn-row">
+      <button class="ghost" id="againBtn">🔮 다시 뽑기</button>
+      <button class="ghost" id="copyBtn">결과 복사</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 도움말 모달 -->
+<div class="overlay" id="helpOverlay">
+  <div class="modal">
+    <h2>타로 보는 법</h2>
+    <p><b>1. 질문과 스프레드 고르기</b><br>
+       궁금한 것을 적고(비워도 됩니다) 뽑을 장수를 고르세요.<br>
+       <b>원 카드</b> 1장 · <b>쓰리 카드</b> 3장(과거·현재·미래) · <b>파이브</b> 5장(상황·걸림돌·조언·주변·결과)</p>
+    <p><b>2. 78장에서 고르기</b><br>
+       <b>카드 섞기</b>를 누르면 정통 덱 78장(메이저 22 + 마이너 56)이 전부 원형으로 둘러 펼쳐집니다.
+       손이 가는 카드를 누른 뒤 <b>이 카드로 선택</b>으로 확정하고, 마음이 바뀌면 <b>다시 고르기</b>를 누르세요.
+       무슨 카드인지는 <b>끝까지 뒤집어 놓은 채</b>라 확정 전에는 알 수 없습니다.</p>
+    <p><b>3. 방향 정하기</b><br>
+       카드는 정방향/역방향이 무작위로 정해져 놓입니다. 어느 쪽인지는 알려드리지 않고,
+       <b>뽑은 그대로 둘지</b> <b>↕ 뒤집기</b>로 뒤집어 놓을지만 정하시면 돼요.</p>
+    <div class="legend"><span class="badge" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(139,108,240,.25);color:#cbbcff;border:1px solid #5b45a8;">정방향</span> 카드의 기운이 그대로 흐르는 상태예요.</div>
+    <div class="legend"><span class="badge rv" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(232,144,122,.18);color:#f3b7a6;border:1px solid #8a4a37;">역방향</span> 기운이 막히거나, 안쪽으로 향하거나, 반대로 뒤집힌 상태예요. 그림도 거꾸로 나옵니다.</div>
+    <p><b>4. 결과 열어보기</b><br>
+       고른 카드는 뒷면으로 놓입니다. <b>카드를 눌러 한 장씩</b> 열면 그 자리의 풀이가 나오고, 다 열면 <b>종합 풀이</b>가 붙습니다.
+       <b>결과 복사</b>를 누르면 전체 내용을 그대로 복사해 갈 수 있어요. (원 카드는 자동으로 열립니다)</p>
+    <p><b>메이저 아르카나</b>(0~21번)는 인생의 큰 흐름을, <b>마이너 아르카나</b>는 일상의 구체적인 장면을 말해줍니다.</p>
+    <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
+    <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
+    <button class="close" id="closeHelp">확인</button>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.10</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ───────── 메이저 아르카나 22장 ───────── */
+/* [번호, 이름, 영문, 상징, 키워드, 정방향, 역방향] */
+const MAJOR = [
+  [0,'바보','The Fool','🎒','새로운 시작 · 순수 · 모험',
+   '아무것도 정해지지 않았기에 무엇이든 될 수 있는 자리예요. 계산보다 마음이 이끄는 쪽으로 첫발을 내딛어도 좋은 때입니다.',
+   '준비 없이 뛰어들어 헛발을 디딜 수 있어요. 설렘과 충동을 구분하고, 최소한의 대비는 챙기라는 신호입니다.'],
+  [1,'마법사','The Magician','🪄','재능 · 실행력 · 자원',
+   '필요한 재료는 이미 손안에 다 있어요. 미루지 말고 지금 가진 것으로 시작하면 생각보다 잘 굴러갑니다.',
+   '능력을 엉뚱한 데 흘려보내거나, 말만 앞서는 상황이에요. 과장된 약속이나 얕은 수에 주의하세요.'],
+  [2,'여사제','The High Priestess','🌙','직관 · 비밀 · 기다림',
+   '아직 드러나지 않은 사실이 있어요. 캐묻기보다 조용히 지켜보면 직관이 답을 먼저 알려줍니다.',
+   '속마음을 감추다 오해가 커지거나, 내면의 소리를 무시하는 중이에요. 숨겨둔 이야기를 꺼낼 때입니다.'],
+  [3,'여황제','The Empress','🌷','풍요 · 돌봄 · 결실',
+   '공들인 것이 무르익어 열매를 맺는 시기예요. 나를 아끼고 주변을 넉넉히 품으면 더 크게 돌아옵니다.',
+   '과한 참견과 보살핌이 오히려 부담이 되거나, 나를 돌보지 못해 메마른 상태예요.'],
+  [4,'황제','The Emperor','🏛','질서 · 책임 · 안정',
+   '규칙과 기준을 세우면 흔들리던 일이 자리를 잡아요. 든든한 사람의 도움을 받을 수도 있습니다.',
+   '고집과 통제가 지나쳐 숨이 막히는 상황이에요. 힘으로 누르기보다 유연함이 필요합니다.'],
+  [5,'교황','The Hierophant','⛪','배움 · 전통 · 조언',
+   '먼저 걸어간 사람의 방식을 따르면 실수가 줄어요. 배우고 묻는 자세가 문을 열어줍니다.',
+   '틀에 박힌 방식이 답답한 때예요. 남의 기준을 벗고 내 방식으로 다시 짜도 괜찮습니다.'],
+  [6,'연인','The Lovers','💞','사랑 · 선택 · 결합',
+   '마음이 통하는 인연, 혹은 둘 중 하나를 골라야 하는 갈림길이에요. 머리보다 진심이 옳은 답입니다.',
+   '엇갈린 마음이나 미루던 선택이 문제를 키워요. 어정쩡한 태도부터 정리해야 합니다.'],
+  [7,'전차','The Chariot','🏇','추진력 · 의지 · 승리',
+   '방향만 정하면 밀어붙일 힘은 충분해요. 흔들리는 마음을 한쪽으로 모으면 이깁니다.',
+   '목적지 없이 속도만 내는 중이에요. 조급함이 사고를 부르니 잠깐 멈추고 방향부터 확인하세요.'],
+  [8,'힘','Strength','🦁','용기 · 인내 · 부드러움',
+   '힘으로 꺾는 대신 다독여 이기는 때예요. 조급해하지 않는 태도가 결국 상황을 길들입니다.',
+   '자신감이 떨어지고 감정에 휘둘려요. 남과 비교하지 말고 작은 성공부터 쌓아가세요.'],
+  [9,'은둔자','The Hermit','🏮','성찰 · 고독 · 탐구',
+   '혼자만의 시간이 필요한 시기예요. 답은 바깥이 아니라 내가 이미 아는 것 안에 있습니다.',
+   '지나친 고립으로 스스로를 가두거나, 도움의 손길을 외면하고 있어요.'],
+  [10,'운명의 수레바퀴','Wheel of Fortune','🎡','전환점 · 흐름 · 기회',
+   '흐름이 바뀌는 지점이에요. 지금 온 기회는 붙잡는 사람의 것이니 망설이지 마세요.',
+   '같은 자리를 맴돌거나 타이밍이 어긋나요. 억지로 밀지 말고 흐름이 돌 때까지 기다리세요.'],
+  [11,'정의','Justice','⚖️','공정 · 균형 · 결과',
+   '뿌린 대로 정확히 돌아옵니다. 원칙대로 처리하면 결과도 내 편이에요.',
+   '한쪽으로 기운 판단이나 미뤄진 결론이 발목을 잡아요. 책임 소재를 분명히 하세요.'],
+  [12,'매달린 사람','The Hanged Man','🙃','관점 전환 · 멈춤 · 헌신',
+   '지금은 나아갈 때가 아니라 뒤집어 볼 때예요. 잠시 멈추면 안 보이던 답이 보입니다.',
+   '의미 없는 희생과 기약 없는 기다림이 이어져요. 놓아줄 것은 놓아주세요.'],
+  [13,'죽음','Death','💀','끝맺음 · 변화 · 재생',
+   '한 챕터가 확실히 닫히는 때예요. 무서운 카드가 아니라, 비워야 새것이 들어온다는 신호입니다.',
+   '끝난 것을 붙들고 있어 변화가 지연돼요. 미련이 다음 문을 막고 있습니다.'],
+  [14,'절제','Temperance','🏺','조화 · 균형 · 절도',
+   '알맞은 속도와 알맞은 양이 답이에요. 서로 다른 것을 잘 섞어내면 좋은 결과가 납니다.',
+   '한쪽으로 치우쳐 균형이 깨졌어요. 과함(또는 부족함)을 스스로 인정하는 게 먼저입니다.'],
+  [15,'악마','The Devil','😈','집착 · 유혹 · 속박',
+   '끊어야 하는 줄 알면서 못 끊는 것이 있어요. 그 사슬은 사실 내가 쥐고 있습니다.',
+   '오래 묶여 있던 것에서 벗어나는 중이에요. 힘들어도 지금 방향이 맞습니다.'],
+  [16,'탑','The Tower','🗼','붕괴 · 충격 · 각성',
+   '예상 못 한 사건이 판을 흔들어요. 다만 무너지는 것은 애초에 금이 가 있던 것들입니다.',
+   '터질 일을 겨우 버티며 미루는 중이에요. 조금씩이라도 정리하면 충격을 줄일 수 있습니다.'],
+  [17,'별','The Star','⭐','희망 · 회복 · 영감',
+   '지나간 고비 뒤에 찾아온 잔잔한 회복이에요. 조용히 품은 소망이 이루어질 길이 열립니다.',
+   '자신감이 흐려지고 기대가 식었어요. 크게 바라지 말고 오늘 할 수 있는 것 하나만 하세요.'],
+  [18,'달','The Moon','🌕','불안 · 불확실 · 무의식',
+   '안개 속을 걷는 시기예요. 보이는 게 전부가 아니니 확실해질 때까지 결정을 미루는 게 좋습니다.',
+   '안개가 걷히고 진실이 드러나요. 막연했던 불안의 정체를 알게 됩니다.'],
+  [19,'태양','The Sun','☀️','성공 · 활력 · 명확함',
+   '가장 밝은 카드예요. 숨길 것 없이 드러내도 좋고, 하는 일마다 온기가 돕습니다.',
+   '기쁨이 잠시 흐려지거나 자신을 과신해요. 들뜸을 가라앉히면 다시 밝아집니다.'],
+  [20,'심판','Judgement','📯','결단 · 부활 · 부름',
+   '지난 일을 정리하고 다시 일어서라는 부름이에요. 미뤄둔 결정을 내리기 좋은 때입니다.',
+   '자책과 후회에 붙들려 결정을 미뤄요. 과거의 나를 용서하는 것부터 시작하세요.'],
+  [21,'세계','The World','🌍','완성 · 성취 · 통합',
+   '한 바퀴가 온전히 마무리돼요. 그동안의 조각들이 하나로 맞춰지며 다음 무대가 열립니다.',
+   '거의 다 왔는데 마지막 매듭이 남았어요. 마무리를 미루면 다음이 늦어집니다.']
+];
+
+/* ───────── 마이너 아르카나 4수트 × 14장 ───────── */
+const SUITS = [
+  {key:'wands', code:'w', name:'완드', sym:'🔥', el:'불 · 열정과 행동'},
+  {key:'cups',  code:'c', name:'컵',   sym:'🍷', el:'물 · 감정과 관계'},
+  {key:'swords',code:'s', name:'소드', sym:'⚔️', el:'공기 · 생각과 언어'},
+  {key:'pents', code:'p', name:'펜타클',sym:'🪙', el:'흙 · 현실과 물질'}
+];
+const RANKS = ['에이스','2','3','4','5','6','7','8','9','10','시종','기사','여왕','왕'];
+
+/* 각 항목: [키워드, 정방향, 역방향] */
+const MINOR = {
+wands:[
+ ['시작의 불씨','새로운 일에 불이 붙어요. 지금 떠오른 그 생각이 씨앗이니 미루지 말고 손을 대보세요.','의욕이 나지 않거나 출발이 자꾸 밀려요. 억지로 불붙이려 하지 말고 컨디션부터 챙기세요.'],
+ ['계획과 시야','두 갈래 중 하나를 고를 때예요. 멀리 보고 판을 넓게 그리면 답이 보입니다.','결정을 미루다 기회가 좁아져요. 완벽한 계획보다 실행 가능한 계획이 낫습니다.'],
+ ['확장과 기다림','뿌려둔 것이 밖에서 자라는 중이에요. 시야를 넓히면 더 큰 판이 보입니다.','기다림이 길어지고 소식이 늦어요. 조건을 다시 점검할 때입니다.'],
+ ['축하와 안정','한 고비 넘긴 자리에서 함께 기뻐할 일이 생겨요. 터전이 든든해집니다.','자리가 아직 덜 여물었어요. 축하는 잠시 미루고 기반부터 다지세요.'],
+ ['경쟁과 마찰','여럿이 부딪히지만 나쁘지만은 않아요. 경쟁이 실력을 끌어올립니다.','소모적인 다툼이에요. 이길 가치가 없는 싸움에서 먼저 빠지는 게 이득입니다.'],
+ ['승리와 인정','노력을 인정받고 앞으로 나서게 돼요. 자신 있게 결과를 드러내세요.','인정이 늦거나, 자만이 발목을 잡아요. 결과보다 과정을 다시 챙기세요.'],
+ ['방어와 버팀','밀려드는 상황에도 내 자리를 지킬 힘이 있어요. 물러서지 마세요.','혼자 감당하기 벅차요. 도움을 청하는 것도 방어의 방법입니다.'],
+ ['빠른 진전','일이 갑자기 속도를 내요. 기다리던 연락이나 소식이 옵니다.','연락이 엇갈리고 진행이 지체돼요. 서두를수록 꼬이니 순서를 정리하세요.'],
+ ['끈기와 고비','상처는 있지만 아직 설 힘이 남았어요. 마지막 한 걸음이 남았습니다.','지치고 예민해져 방어만 하게 돼요. 쉬어야 다시 갈 수 있습니다.'],
+ ['과중한 짐','책임이 몰려 어깨가 무거워요. 다 안고 가려다 길을 잃을 수 있습니다.','내려놓기 시작해요. 나눠 맡기면 훨씬 빨라집니다.'],
+ ['호기심과 소식','새로운 소식과 배울 거리가 찾아와요. 겁 없이 물어보세요.','들뜨기만 하고 마무리가 안 돼요. 벌린 일부터 정리하세요.'],
+ ['돌진과 모험','일단 저지르는 추진력이 통하는 때예요. 속도가 무기입니다.','성급함이 사고를 만들어요. 확인 한 번이 큰 손해를 막습니다.'],
+ ['자신감과 매력','당당한 태도가 사람을 끌어와요. 하고 싶은 말을 해도 좋습니다.','조급함과 질투가 판단을 흐려요. 남의 속도와 비교하지 마세요.'],
+ ['리더십과 비전','큰 그림을 그리고 사람을 이끄는 자리예요. 결단이 신뢰를 부릅니다.','독선과 충동이 문제예요. 듣는 귀를 열어야 따라옵니다.']
+],
+cups:[
+ ['감정의 시작','마음이 열리는 때예요. 새로운 인연이나 감정이 잔잔히 차오릅니다.','마음이 막히고 공허해요. 억지 감정보다 솔직한 무덤덤함이 낫습니다.'],
+ ['교감과 결합','서로를 알아보는 관계예요. 마음을 표현하면 그대로 돌아옵니다.','한쪽만 기울어진 마음이에요. 오해가 있다면 지금 풀어야 합니다.'],
+ ['우정과 축하','사람들 덕에 웃을 일이 생겨요. 모임과 나눔이 힘이 됩니다.','관계가 소원해지거나 지나친 자리가 탈이 돼요. 적당함이 필요합니다.'],
+ ['권태와 무심','익숙함에 지쳐 흥미가 사라졌어요. 눈앞의 기회도 시큰둥합니다.','다시 마음이 움직여요. 놓칠 뻔한 제안을 잡을 수 있습니다.'],
+ ['상실과 아쉬움','잃은 것에 마음이 붙들려 있어요. 다만 남은 것도 분명히 있습니다.','슬픔을 지나 회복으로 갑니다. 용서와 정리가 시작돼요.'],
+ ['추억과 온정','옛 인연이나 그리운 기억이 찾아와요. 순수한 마음이 위로가 됩니다.','과거에 갇혀 지금을 못 살아요. 돌아갈 수 없는 것은 놓아주세요.'],
+ ['환상과 선택지','고를 것이 너무 많아 헷갈려요. 달콤한 것 중 일부는 환상입니다.','현실이 또렷해져요. 허황된 선택지를 지우면 답이 남습니다.'],
+ ['떠남과 탐색','충분히 채웠지만 마음이 허해 길을 떠나요. 더 깊은 의미를 찾는 중입니다.','미련에 되돌아가거나 떠날지 말지 맴돌아요. 기준을 정하세요.'],
+ ['만족과 소원','바라던 것이 이뤄지는 카드예요. 누려도 좋은 시기입니다.','겉만 그럴듯한 만족이거나 욕심이 과해요. 진짜 원한 게 뭔지 물어보세요.'],
+ ['가정의 행복','따뜻한 관계가 완성돼요. 함께여서 좋은 시간이 이어집니다.','겉으로만 화목하고 속으로 금이 가요. 솔직한 대화가 필요합니다.'],
+ ['감성과 영감','뜻밖의 좋은 소식이나 창작의 영감이 와요. 마음이 말랑해집니다.','감정 기복이 크고 공상에 빠져요. 현실에 발을 붙이세요.'],
+ ['낭만적 제안','마음을 담은 제안이 들어와요. 로맨틱한 흐름이 생깁니다.','달콤한 말만 있고 실체가 없어요. 행동으로 확인하세요.'],
+ ['공감과 포용','상대의 마음을 알아채는 힘이 있어요. 위로가 큰 역할을 합니다.','감정이입이 지나쳐 나를 소모해요. 거리를 두는 연습이 필요합니다.'],
+ ['성숙한 감정','흔들려도 중심을 잡는 어른의 태도예요. 감정을 다스려 신뢰를 얻습니다.','감정을 억누르거나 상대를 감정으로 흔들어요. 솔직함이 답입니다.']
+],
+swords:[
+ ['명료한 진실','흐릿하던 것이 또렷해져요. 정확한 판단과 결단의 힘이 생깁니다.','판단이 흐려지고 정보가 뒤엉켜요. 결정을 잠시 미루세요.'],
+ ['보류와 균형','결정하지 못한 채 팽팽해요. 눈을 가린 채로는 답이 안 나옵니다.','회피가 끝나고 결단할 때예요. 어느 쪽이든 고르는 게 낫습니다.'],
+ ['상심과 아픈 말','마음을 찌르는 사실이나 말이 있어요. 아프지만 분명한 진실입니다.','상처가 아물기 시작해요. 용서와 회복의 방향입니다.'],
+ ['휴식과 회복','멈추고 쉬어야 하는 때예요. 지금의 정지는 후퇴가 아닙니다.','충분히 쉬지 못한 채 다시 뛰어요. 무리하면 더 길게 쉬게 됩니다.'],
+ ['상처뿐인 승리','이겨도 남는 게 씁쓸해요. 얻는 것과 잃는 것을 저울질하세요.','갈등이 끝나고 화해로 갑니다. 먼저 손 내밀면 정리됩니다.'],
+ ['벗어남과 이동','어려운 자리를 떠나 잔잔한 쪽으로 옮겨가요. 도와주는 사람이 있습니다.','문제를 안은 채 자리만 옮겨요. 원인을 두고 가면 따라옵니다.'],
+ ['전략과 은밀함','정면 승부보다 머리를 쓸 때예요. 다만 떳떳한 선은 지키세요.','숨긴 것이 드러나거나 계획이 새요. 솔직하게 정리하는 편이 낫습니다.'],
+ ['스스로 만든 속박','못 움직인다고 느끼지만 매듭은 느슨해요. 시야를 가린 건 두려움입니다.','묶임이 풀려요. 한 발만 떼면 생각보다 자유롭습니다.'],
+ ['불안과 걱정','밤마다 커지는 근심이에요. 실제보다 크게 느껴지는 중입니다.','걱정의 실체를 확인하고 가벼워져요. 말로 꺼내면 줄어듭니다.'],
+ ['바닥과 끝','더 나빠질 게 없는 지점이에요. 끝났다는 사실을 인정하면 끝납니다.','최악을 지나 회복이 시작돼요. 천천히 일어나면 됩니다.'],
+ ['정보와 경계','살피고 알아보는 자세가 도움이 돼요. 꼼꼼함이 무기입니다.','말이 새거나 성급한 발언이 화를 불러요. 입단속이 필요합니다.'],
+ ['저돌적 추진','거침없이 밀어붙이고 할 말을 해요. 속도로 상황을 뚫습니다.','공격성과 무례함이 관계를 깨요. 한 박자 늦추세요.'],
+ ['명석한 통찰','핵심을 꿰뚫어 봐요. 감정을 걷어내면 정확한 답이 나옵니다.','지나치게 차갑고 비판적이에요. 옳은 말도 온도가 필요합니다.'],
+ ['원칙과 논리','기준을 세워 판단하면 신뢰를 얻어요. 공적인 일에 유리합니다.','독단과 권위가 문제예요. 규칙 뒤에 숨지 마세요.']
+],
+pents:[
+ ['실질적 기회','손에 잡히는 기회가 와요. 돈, 일, 건강 어느 쪽이든 시작이 좋습니다.','기회를 흘려보내거나 조급하게 굴어 놓쳐요. 조건을 다시 보세요.'],
+ ['균형 잡기','두 가지를 요령껏 굴려요. 유연함이 있으면 둘 다 됩니다.','벌인 일이 많아 과부하예요. 하나는 내려놓아야 합니다.'],
+ ['협업과 실력','함께 만들며 실력을 인정받아요. 역할을 나누면 잘 굴러갑니다.','손발이 안 맞고 기준이 달라요. 역할부터 정리하세요.'],
+ ['지킴과 저축','가진 것을 단단히 지켜요. 안정이 필요한 시기입니다.','움켜쥐다 기회를 막아요. 인색함과 집착을 경계하세요.'],
+ ['결핍과 소외','춥고 부족하다고 느끼는 때예요. 혼자라는 마음이 더 시립니다.','회복이 시작돼요. 도움의 문이 가까이 있으니 문을 두드리세요.'],
+ ['나눔과 후원','받거나 주는 도움이 오가요. 조건이 분명하면 좋은 거래입니다.','한쪽만 유리한 거래예요. 갚을 수 있는 선만 받으세요.'],
+ ['기다림과 점검','씨앗은 자라는 중이니 중간 점검만 하세요. 수확은 아직입니다.','조급하게 거두려다 설익어요. 아니다 싶으면 갈아엎는 것도 방법입니다.'],
+ ['숙련과 성실','같은 일을 꾸준히 다듬는 힘이 결과를 만들어요. 지금은 실력을 쌓을 때입니다.','대충 하거나 지루함에 빠져요. 기본기를 다시 잡으세요.'],
+ ['자립과 여유','스스로 이룬 풍요를 누려요. 혼자여도 충분히 단단합니다.','겉으로만 여유롭고 속이 불안해요. 보여주기를 줄이세요.'],
+ ['안정된 기반','오래 갈 토대가 만들어져요. 가족, 재산, 자리가 든든해집니다.','돈이나 가족 문제로 마찰이 생겨요. 계산은 분명히 하세요.'],
+ ['배움과 실속','실속 있는 공부나 작은 시작이 좋아요. 차근차근이 답입니다.','미루기와 산만함이 발목을 잡아요. 오늘 할 몫만 정하세요.'],
+ ['꾸준함과 신뢰','느려도 확실하게 갑니다. 약속을 지키는 태도가 신뢰를 만들어요.','정체되고 지루해요. 방식에 변화를 한 스푼 넣어보세요.'],
+ ['현실적 돌봄','살림과 일을 두루 챙기는 힘이 있어요. 실질적인 도움을 주고받습니다.','다 떠안다 지쳐요. 과보호는 상대의 몫을 뺏는 일입니다.'],
+ ['성취와 수완','현실 감각으로 이룬 안정이에요. 사업과 재물 운이 좋습니다.','물질에만 매이고 완고해져요. 숫자 밖의 가치도 보세요.']
+]
+};
+
+/* ───────── 덱 만들기 ───────── */
+const pad2 = n => (n < 10 ? '0' : '') + n;
+function buildDeck(){
+  const deck = [];
+  MAJOR.forEach(m=>{
+    deck.push({type:'major', num:m[0], name:m[1], en:m[2], sym:m[3], kw:m[4], up:m[5], rev:m[6],
+               img:'img/m' + pad2(m[0]) + '.jpg'});
+  });
+  SUITS.forEach(s=>{
+    MINOR[s.key].forEach((t, i)=>{
+      deck.push({
+        type:'minor', suit:s, rank:RANKS[i], rankNo:i+1,
+        name:s.name + ' ' + RANKS[i], en:'', sym:s.sym,
+        kw:t[0], up:t[1], rev:t[2],
+        img:'img/' + s.code + pad2(i+1) + '.jpg'
+      });
+    });
+  });
+  return deck;
+}
+const DECK = buildDeck();   // 78장
+
+/* ───────── 스프레드 ───────── */
+const SPREADS = [
+  {key:'one',   title:'원 카드',  desc:'오늘의 한 장', n:1,
+   pos:['오늘의 메시지'],
+   posDesc:['지금의 나에게 필요한 한마디']},
+  {key:'three', title:'쓰리 카드', desc:'과거·현재·미래', n:3,
+   pos:['과거','현재','미래'],
+   posDesc:['여기까지 오게 한 흐름','지금 놓인 자리','이대로 갔을 때의 방향']},
+  {key:'five',  title:'파이브',   desc:'상황 전체 보기', n:5,
+   pos:['현재 상황','걸림돌','조언','주변 환경','흐름의 끝'],
+   posDesc:['질문의 한가운데','발목을 잡는 것','카드가 권하는 태도','나를 둘러싼 사람과 조건','지금 흐름이 닿는 곳']}
+];
+let spread = SPREADS[1];
+
+/* ───────── DOM ───────── */
+const $ = id => document.getElementById(id);
+const introStage = $('introStage'), pickStage = $('pickStage'), resultStage = $('resultStage');
+const fanEl = $('fan');
+const FAN_COUNT = 78;          // 화면에 펼치는 카드 수 (전체 덱)
+const FAN_SPAN  = 350;         // 거의 한 바퀴 — 아래쪽 10°를 비워 첫 장·끝 장이 겹치지 않게
+let fanCards = [];             // 부채꼴에 놓인 카드 데이터
+let picked = [];               // 고른 인덱스
+
+/* 스프레드 버튼 */
+function buildSpreads(){
+  const box = $('spreads');
+  box.innerHTML = '';
+  SPREADS.forEach(s=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'spread' + (s.key === spread.key ? ' on' : '');
+    b.innerHTML = '<b>' + s.title + '</b><span>' + s.desc + '</span>';
+    b.addEventListener('click', ()=>{
+      spread = s;
+      box.querySelectorAll('.spread').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+    });
+    box.appendChild(b);
+  });
+}
+
+/* 카드 앞면 그리기 — 라이더-웨이트 원화 이미지 */
+function faceHTML(card, reversed){
+  return '<div class="face front' + (reversed ? ' rev' : '') + '">' +
+         '<img class="cimg" src="' + card.img + '" alt="' + card.name + '" draggable="false">' +
+         (reversed ? '<div class="rvmark">역방향</div>' : '') +
+         '</div>';
+}
+// 카드를 눌렀을 때 그림이 바로 뜨도록, 펼치기 화면에서 78장을 천천히 미리 받아둔다
+let warmed = false;
+function warmDeck(){
+  if(warmed) return;
+  warmed = true;
+  const c = navigator.connection;
+  if(c && (c.saveData || /(^|-)2g/.test(c.effectiveType || ''))) return;   // 데이터 절약 모드면 생략
+  let i = 0;
+  const tick = ()=>{
+    for(let k=0;k<4 && i<DECK.length;k++,i++){ const im = new Image(); im.src = DECK[i].img; }
+    if(i < DECK.length) setTimeout(tick, 280);
+  };
+  setTimeout(tick, 700);
+}
+function backHTML(){
+  return '<div class="face back"><span class="mark">✦</span></div>';
+}
+function toRoman(n){
+  if(n === 0) return '0';
+  const map = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  let out = '', v = n;
+  map.forEach(([k,s])=>{ while(v >= k){ out += s; v -= k; } });
+  return out;
+}
+
+/* ───────── 2단계: 카드 펼치기 ───────── */
+function shuffleDeck(){
+  const d = DECK.slice();
+  for(let i=d.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d.slice(0, FAN_COUNT).map(c=>({card:c, reversed: Math.random() < 0.42}));
+}
+
+function fitFan(){
+  const w = Math.min(window.innerWidth - 16, 640);
+  document.documentElement.style.setProperty('--fanScale', Math.min(1, w / 624).toFixed(3));
+}
+window.addEventListener('resize', fitFan);
+
+function dealFan(){
+  fanCards = shuffleDeck();
+  picked = [];
+  closePreview();
+  fanEl.innerHTML = '';
+  // 한 바퀴(360°)면 첫 장과 끝 장이 겹치지 않게 장수로 나눈다
+  const step = FAN_SPAN >= 360 ? FAN_SPAN / FAN_COUNT : FAN_SPAN / (FAN_COUNT - 1);
+  fanCards.forEach((fc, i)=>{
+    const a = -FAN_SPAN/2 + step*i;
+    const el = document.createElement('div');
+    el.className = 'card dealt';
+    el.style.transform = 'rotate(' + a.toFixed(2) + 'deg)';
+    el.style.animationDelay = (i*7) + 'ms';
+    el.style.zIndex = i;
+    el.dataset.angle = a;
+    el.innerHTML = '<div class="inner">' + backHTML() + '</div>';
+    el.addEventListener('click', ()=>previewCard(i, el));
+    fanEl.appendChild(el);
+  });
+  updateCount();
+}
+
+/* ── 카드를 누르면 먼저 보여주고, 확정 버튼으로 선택 ── */
+let previewIdx = null, previewRev = false;
+
+function previewCard(i, el){
+  if(picked.includes(i) || picked.length >= spread.n) return;
+  previewIdx = i;
+  previewRev = fanCards[i].reversed;
+  fanEl.querySelectorAll('.card.preview').forEach(c=>c.classList.remove('preview'));
+  el.classList.add('preview');
+  renderPreview();
+  $('preview').classList.add('on');
+  $('preview').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderPreview(){
+  // 무슨 카드인지는 아직 공개하지 않는다 — 뒷면만 보여주고 놓을 방향만 정하게 함
+  $('pvFace').innerHTML = backHTML();
+  // 뽑힌 방향이 정방향인지 역방향인지도 알려주지 않는다 — 그대로 둘지, 뒤집을지만 정함
+  const flipped = (previewRev !== fanCards[previewIdx].reversed);
+  const nm = $('pvName');
+  nm.textContent = flipped ? '↕ 뒤집어 보기' : '뽑은 그대로 두기';
+  nm.classList.toggle('rv', flipped);
+  $('pvKw').textContent = '무슨 카드인지는 선택한 뒤에 공개돼요';
+}
+
+function flipPreview(){
+  if(previewIdx === null) return;
+  previewRev = !previewRev;
+  renderPreview();
+}
+
+function closePreview(){
+  previewIdx = null;
+  const p = $('preview');
+  if(p) p.classList.remove('on');
+  if(fanEl) fanEl.querySelectorAll('.card.preview').forEach(c=>c.classList.remove('preview'));
+}
+
+function confirmPick(){
+  if(previewIdx === null) return;
+  const i = previewIdx;
+  const el = fanEl.children[i];
+  fanCards[i].reversed = previewRev;      // 뒤집기 결과 반영
+  closePreview();
+
+  picked.push(i);
+  const a = parseFloat(el.dataset.angle);
+  el.style.transform = 'rotate(' + a.toFixed(2) + 'deg) translateY(-30px)';
+  el.classList.add('picked');
+  updateCount();
+  if(picked.length === spread.n){
+    fanEl.querySelectorAll('.card').forEach((c, idx)=>{
+      if(!picked.includes(idx)) c.classList.add('dim');
+    });
+    setTimeout(showResult, 620);
+  }
+}
+
+function updateCount(){
+  $('pickCnt').textContent = spread.title + ' · ' + spread.n + '장 중 ' + picked.length + '장 선택';
+}
+
+/* ───────── 3단계: 결과 ───────── */
+function showResult(){
+  const q = $('question').value.trim();
+  $('resQ').textContent = q ? '“' + q + '”' : '';
+  const chosen = picked.map(i=>fanCards[i]);
+
+  // 카드 배치
+  const row = $('spreadRow');
+  row.innerHTML = '';
+  const cw = spread.n === 1 ? 132 : spread.n === 3 ? 96 : 82;
+  chosen.forEach((fc, i)=>{
+    const slot = document.createElement('div');
+    slot.className = 'slot closed';          // 아직 안 연 상태
+    slot.style.setProperty('--cw', cw + 'px');
+    slot.innerHTML =
+      '<div class="pos">' + spread.pos[i] + '</div>' +
+      '<div class="card"><div class="inner">' + backHTML() + faceHTML(fc.card, fc.reversed) + '</div></div>' +
+      '<div class="revtag"></div>';
+    slot.querySelector('.card').addEventListener('click', ()=>openCard(i));
+    row.appendChild(slot);
+  });
+
+  // 풀이
+  const box = $('readings');
+  box.innerHTML = '';
+  chosen.forEach((fc, i)=>{
+    const c = fc.card;
+    const d = document.createElement('div');
+    d.className = 'read';
+    d.style.display = 'none';          // 카드를 열 때 하나씩 보여줌
+    d.dataset.idx = i;
+    const kind = c.type === 'major'
+      ? '메이저 아르카나 · ' + toRoman(c.num) + ' ' + c.en
+      : '마이너 아르카나 · ' + c.suit.el;
+    d.innerHTML =
+      '<h3>' + c.sym + ' ' + c.name +
+        '<span class="badge' + (fc.reversed ? ' rv' : '') + '">' + (fc.reversed ? '역방향' : '정방향') + '</span></h3>' +
+      '<div class="posline">' + spread.pos[i] + ' — ' + spread.posDesc[i] + ' · ' + kind + '</div>' +
+      '<p class="kw">🔑 ' + c.kw + '</p>' +
+      '<p>' + (fc.reversed ? c.rev : c.up) + '</p>';
+    box.appendChild(d);
+  });
+
+  // 종합
+  const sum = document.createElement('div');
+  sum.className = 'read summary';
+  sum.id = 'summaryBox';
+  sum.style.display = 'none';          // 카드를 다 열면 나타남
+  sum.innerHTML = '<h3>✦ 종합 풀이</h3><p>' + summarize(chosen) + '</p>';
+  box.appendChild(sum);
+
+  introStage.style.display = 'none';
+  pickStage.style.display = 'none';
+  resultStage.style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  // 한 장씩 열기 — 카드를 누르면 그 카드만 뒤집히고 풀이가 나타남
+  lastChosen = chosen;
+  openedCount = 0;
+  updateOpenHint();
+  if(chosen.length === 1) setTimeout(()=>openCard(0), 260);   // 한 장이면 자동으로
+}
+
+/* ───────── 결과: 카드 한 장씩 열기 ───────── */
+let lastChosen = [], openedCount = 0;
+
+function updateOpenHint(){
+  const el = $('openHint');
+  if(!el) return;
+  const total = lastChosen.length;
+  el.textContent = openedCount >= total
+    ? ''
+    : '카드를 눌러 한 장씩 열어보세요  (' + openedCount + '/' + total + ')';
+}
+
+function openCard(i){
+  const row = $('spreadRow');
+  const slot = row.children[i];
+  if(!slot || !slot.classList.contains('closed')) return;
+  slot.classList.remove('closed');
+  slot.querySelector('.card').classList.add('flipped');
+  const fc = lastChosen[i];
+  if(fc && fc.reversed) row.querySelectorAll('.revtag')[i].textContent = '역방향';
+
+  const read = $('readings').querySelector('.read[data-idx="' + i + '"]');
+  if(read){
+    read.style.display = '';
+    read.style.animation = 'none';
+    void read.offsetWidth;              // 애니메이션 재시작
+    read.style.animation = 'rise .45s forwards';
+  }
+  openedCount++;
+  updateOpenHint();
+  if(openedCount >= lastChosen.length){
+    const s = $('summaryBox');
+    if(s){ s.style.display = ''; s.style.animation = 'rise .45s forwards'; }
+  }
+}
+
+function summarize(chosen){
+  const n = chosen.length;
+  const major = chosen.filter(c=>c.card.type === 'major').length;
+  const rev = chosen.filter(c=>c.reversed).length;
+  const cnt = {};
+  chosen.forEach(c=>{ if(c.card.type === 'minor') cnt[c.card.suit.key] = (cnt[c.card.suit.key]||0)+1; });
+  let top = null, topN = 0;
+  for(const k in cnt){ if(cnt[k] > topN){ top = k; topN = cnt[k]; } }
+
+  const out = [];
+  if(n === 1){
+    const c = chosen[0].card;
+    out.push(c.type === 'major'
+      ? '메이저 아르카나가 나왔어요. 오늘 하루의 일이라기보다, 지금 지나는 시기 전체에 대한 이야기입니다.'
+      : (c.suit.sym + ' ' + c.suit.name + ' 카드예요. ' + c.suit.el.split(' · ')[1] + '에 관한 아주 구체적인 조언입니다.'));
+    out.push(chosen[0].reversed
+      ? '역방향이니 밀어붙이기보다 한 박자 늦추고 안쪽을 살펴보세요.'
+      : '정방향이니 카드의 기운이 막힘 없이 흐르고 있어요.');
+    return out.join(' ');
+  }
+  if(major >= Math.ceil(n/2) && major > 0){
+    out.push('메이저 아르카나가 ' + major + '장이나 나왔어요. 사소한 일이 아니라 흐름 자체가 크게 움직이는 시기이니, 작은 조정보다 방향을 볼 때입니다.');
+  } else if(major === 0 && n > 1){
+    out.push('전부 마이너 아르카나예요. 거창한 운명보다 일상에서 손댈 수 있는 것들이 답을 쥐고 있습니다.');
+  } else {
+    out.push('큰 흐름과 일상의 장면이 섞여 나왔어요. 방향은 크게 두고, 실행은 작게 쪼개는 편이 좋습니다.');
+  }
+  if(topN >= 2){
+    const s = SUITS.find(x=>x.key === top);
+    const msg = {
+      wands:'열정과 행동',
+      cups:'감정과 사람 관계',
+      swords:'생각·말·판단',
+      pents:'돈·일·현실 조건'
+    }[top];
+    out.push(s.sym + ' ' + s.name + ' 카드가 ' + topN + '장 — 지금 이 문제의 무게중심은 ' + msg + '에 있어요.');
+  }
+  if(rev === 0){
+    out.push('역방향이 하나도 없어요. 막힌 데 없이 기운이 흐르니, 망설임만 덜면 됩니다.');
+  } else if(rev >= Math.ceil(n/2) && n > 1){
+    out.push('역방향이 ' + rev + '장으로 많은 편이에요. 밀어붙이기보다 속도를 늦추고 안쪽을 살필 때라는 신호입니다.');
+  } else if(rev > 0){
+    out.push('역방향이 ' + rev + '장 섞여 있어요. 그 자리에서만 한 박자 조심하면 전체 흐름은 괜찮습니다.');
+  }
+  return out.join(' ');
+}
+
+/* ───────── 결과 복사 ───────── */
+function resultText(){
+  const q = $('question').value.trim();
+  const chosen = picked.map(i=>fanCards[i]);
+  const lines = ['🔮 이로재로타로 — ' + spread.title];
+  if(q) lines.push('질문: ' + q);
+  lines.push('');
+  chosen.forEach((fc, i)=>{
+    lines.push('[' + spread.pos[i] + '] ' + fc.card.sym + ' ' + fc.card.name +
+               ' (' + (fc.reversed ? '역방향' : '정방향') + ') — ' + fc.card.kw);
+    lines.push(fc.reversed ? fc.card.rev : fc.card.up);
+    lines.push('');
+  });
+  lines.push('✦ 종합: ' + summarize(chosen));
+  return lines.join('\n');
+}
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+function copyResult(){
+  const text = resultText();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast('결과를 복사했어요'), fallbackCopy);
+  } else fallbackCopy();
+  function fallbackCopy(){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); toast('결과를 복사했어요'); }
+    catch(e){ toast('복사에 실패했어요'); }
+    document.body.removeChild(ta);
+  }
+}
+
+/* ───────── 화면 전환 ───────── */
+function goPick(){
+  $('pickQ').textContent = $('question').value.trim() ? '“' + $('question').value.trim() + '”' : '마음속 질문을 떠올리며 골라보세요';
+  introStage.style.display = 'none';
+  resultStage.style.display = 'none';
+  pickStage.style.display = 'block';
+  fitFan();
+  dealFan();
+  warmDeck();
+  pickStage.classList.add('shuffling');
+  setTimeout(()=>pickStage.classList.remove('shuffling'), 700);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function goIntro(){
+  closePreview();
+  pickStage.style.display = 'none';
+  resultStage.style.display = 'none';
+  introStage.style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ───────── 이벤트 ───────── */
+$('shuffleBtn').addEventListener('click', goPick);
+$('reshuffleBtn').addEventListener('click', goPick);
+$('pvOk').addEventListener('click', confirmPick);
+$('pvFlip').addEventListener('click', flipPreview);
+$('pvCancel').addEventListener('click', closePreview);
+$('backBtn').addEventListener('click', goIntro);
+$('againBtn').addEventListener('click', goIntro);
+$('copyBtn').addEventListener('click', copyResult);
+$('question').addEventListener('keydown', e=>{ if(e.key === 'Enter') goPick(); });
+
+const helpOverlay = $('helpOverlay');
+$('helpBtn').addEventListener('click', ()=>helpOverlay.classList.add('show'));
+$('closeHelp').addEventListener('click', ()=>helpOverlay.classList.remove('show'));
+helpOverlay.addEventListener('click', e=>{ if(e.target === helpOverlay) helpOverlay.classList.remove('show'); });
+window.addEventListener('keydown', e=>{
+  if(helpOverlay.classList.contains('show') && (e.key === 'Escape' || e.key === 'Enter')){
+    helpOverlay.classList.remove('show');
+  }
+});
+
+/* ───────── 시작 ───────── */
+buildSpreads();
+fitFan();
+</script>
+</body>
+</html>
