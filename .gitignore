@@ -1,0 +1,8 @@
+# 중계서버 빌드 산출물 (수백 MB — 저장소에 올리지 않음)
+relay/build/
+relay/dist/
+relay/relay.log
+relay/__pycache__/
+
+# 바탕화면으로 나가는 배포 묶음
+*.zip
