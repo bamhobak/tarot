@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.54
+  @version v1.0.55
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -452,7 +452,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.54</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.55</div>
   </div>
 </div>
 
@@ -841,7 +841,7 @@ function renderAiImage(withCards){
 
   // ── 머리말(항목·질문) ──
   const q = $('question').value.trim();
-  m.font = fnt(25, 800);
+  m.font = fnt(28, 800);
   const qLines = q ? wrapLines(m, '“' + q + '”', innerW - 20) : [];
 
   // ── 카드 ──
@@ -852,12 +852,12 @@ function renderAiImage(withCards){
   const useCards = withCards !== false && chosen.length && imgs.length === chosen.length;
   const cw = 168, ch = Math.round(cw * 1.723), cgap = 20;
 
-  let headH = 20 + 24 + qLines.length*34 + 10;
+  let headH = 20 + 27 + qLines.length*38 + 12;
   const cardsH = useCards ? (22 + ch + 24) : 0;
 
   // 표 열 너비: 내용 길이 비율로 나눈다
   const tableLayout = b=>{
-    m.font = fnt(15);
+    m.font = fnt(17);
     const n = b.head.length;
     const wmax = new Array(n).fill(1);
     [b.head, ...b.rows].forEach(r=>r.forEach((c,i)=>{
@@ -870,15 +870,15 @@ function renderAiImage(withCards){
   // 풀이 패널 높이
   let panelH = 22;
   blocks.forEach(b=>{
-    if(b.t === 'h'){ m.font = fnt(19, 800); b._l = wrapLines(m, b.text, bodyW); panelH += 12 + b._l.length*28; }
-    else if(b.t === 'p'){ m.font = fnt(16); b._l = wrapLines(m, b.text, bodyW); panelH += 8 + b._l.length*27; }
-    else if(b.t === 'li'){ m.font = fnt(16); b._l = wrapLines(m, b.text, bodyW - 18); panelH += 6 + b._l.length*27; }
+    if(b.t === 'h'){ m.font = fnt(23, 800); b._l = wrapLines(m, b.text, bodyW); panelH += 14 + b._l.length*34; }
+    else if(b.t === 'p'){ m.font = fnt(19); b._l = wrapLines(m, b.text, bodyW); panelH += 10 + b._l.length*32; }
+    else if(b.t === 'li'){ m.font = fnt(19); b._l = wrapLines(m, b.text, bodyW - 22); panelH += 8 + b._l.length*32; }
     else {
       b._w = tableLayout(b);
-      m.font = fnt(15, 800);
-      b._hh = Math.max(...b.head.map((c,i)=>wrapLines(m, c, b._w[i]-18).length)) * 24 + 16;
-      m.font = fnt(15);
-      b._rh = b.rows.map(r=>Math.max(...r.map((c,i)=>wrapLines(m, c, b._w[i]-18).length)) * 24 + 16);
+      m.font = fnt(17, 800);
+      b._hh = Math.max(...b.head.map((c,i)=>wrapLines(m, c, b._w[i]-20).length)) * 28 + 18;
+      m.font = fnt(17);
+      b._rh = b.rows.map(r=>Math.max(...r.map((c,i)=>wrapLines(m, c, b._w[i]-20).length)) * 28 + 18);
       panelH += 16 + b._hh + b._rh.reduce((a,c)=>a+c, 0);
     }
   });
@@ -902,12 +902,12 @@ function renderAiImage(withCards){
   // 머리말
   let y = 20;
   ctx.textAlign = 'center';
-  ctx.font = fnt(15, 700); ctx.fillStyle = '#b6abdc';
+  ctx.font = fnt(17, 700); ctx.fillStyle = '#b6abdc';
   ctx.fillText(topic.icon + ' ' + topic.name, IMG_W/2, y);
-  y += 24;
-  ctx.font = fnt(25, 800); ctx.fillStyle = '#e8c877';
-  qLines.forEach(l=>{ ctx.fillText(l, IMG_W/2, y); y += 34; });
-  y += 10;
+  y += 27;
+  ctx.font = fnt(28, 800); ctx.fillStyle = '#e8c877';
+  qLines.forEach(l=>{ ctx.fillText(l, IMG_W/2, y); y += 38; });
+  y += 12;
 
   // 카드
   if(useCards){
@@ -915,7 +915,7 @@ function renderAiImage(withCards){
     let x = (IMG_W - rowW) / 2;
     const top = y + 22;
     chosen.forEach((fc, i)=>{
-      ctx.font = fnt(13, 700); ctx.fillStyle = '#e8c877';
+      ctx.font = fnt(15, 700); ctx.fillStyle = '#e8c877';
       ctx.fillText(P.pos[i], x + cw/2, y);
       ctx.save();
       roundRect(ctx, x, top, cw, ch, 8); ctx.clip();
@@ -931,8 +931,8 @@ function renderAiImage(withCards){
       roundRect(ctx, x, top, cw, ch, 8);
       ctx.strokeStyle = '#a98f47'; ctx.lineWidth = 2; ctx.stroke();
       if(fc.reversed){
-        ctx.font = fnt(12, 800); ctx.fillStyle = '#e8907a';
-        ctx.fillText('역방향', x + cw/2, top + ch + 6);
+        ctx.font = fnt(14, 800); ctx.fillStyle = '#e8907a';
+        ctx.fillText('역방향', x + cw/2, top + ch + 7);
       }
       x += cw + cgap;
     });
@@ -953,17 +953,17 @@ function renderAiImage(withCards){
   blocks.forEach(b=>{
     if(b.t === 'h'){
       y += 12;
-      ctx.font = fnt(19, 800); ctx.fillStyle = '#e8c877';
-      b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 28; });
+      ctx.font = fnt(23, 800); ctx.fillStyle = '#e8c877';
+      b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 34; });
     } else if(b.t === 'p'){
-      y += 8;
-      ctx.font = fnt(16); ctx.fillStyle = '#e4dcff';
-      b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 27; });
+      y += 10;
+      ctx.font = fnt(19); ctx.fillStyle = '#e4dcff';
+      b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 32; });
     } else if(b.t === 'li'){
-      y += 6;
-      ctx.font = fnt(16); ctx.fillStyle = '#e4dcff';
+      y += 8;
+      ctx.font = fnt(19); ctx.fillStyle = '#e4dcff';
       ctx.fillText('·', x0, y);
-      b._l.forEach(l=>{ ctx.fillText(l, x0 + 18, y); y += 27; });
+      b._l.forEach(l=>{ ctx.fillText(l, x0 + 22, y); y += 32; });
     } else {
       y += 16;
       let cx = x0;
@@ -972,9 +972,9 @@ function renderAiImage(withCards){
       b.head.forEach((c, i)=>{
         ctx.strokeStyle = '#3c2f74'; ctx.lineWidth = 1;
         ctx.strokeRect(cx, y, b._w[i], b._hh);
-        ctx.font = fnt(15, 800); ctx.fillStyle = '#e8c877';
-        let ty = y + 8;
-        wrapLines(ctx, c, b._w[i]-18).forEach(l=>{ ctx.fillText(l, cx + 9, ty); ty += 24; });
+        ctx.font = fnt(17, 800); ctx.fillStyle = '#e8c877';
+        let ty = y + 9;
+        wrapLines(ctx, c, b._w[i]-20).forEach(l=>{ ctx.fillText(l, cx + 10, ty); ty += 28; });
         cx += b._w[i];
       });
       y += b._hh;
@@ -987,9 +987,9 @@ function renderAiImage(withCards){
         r.forEach((c, i)=>{
           ctx.strokeStyle = '#3c2f74'; ctx.lineWidth = 1;
           ctx.strokeRect(cx, y, b._w[i], b._rh[ri]);
-          ctx.font = fnt(15); ctx.fillStyle = '#e4dcff';
-          let ty = y + 8;
-          wrapLines(ctx, c, b._w[i]-18).forEach(l=>{ ctx.fillText(l, cx + 9, ty); ty += 24; });
+          ctx.font = fnt(17); ctx.fillStyle = '#e4dcff';
+          let ty = y + 9;
+          wrapLines(ctx, c, b._w[i]-20).forEach(l=>{ ctx.fillText(l, cx + 10, ty); ty += 28; });
           cx += b._w[i];
         });
         y += b._rh[ri];
