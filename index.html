@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.53
+  @version v1.0.54
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -79,6 +79,7 @@
     width:100%;padding:12px 13px;font-size:15px;font-family:inherit;
     background:rgba(0,0,0,.28);color:var(--text);
     border:1px solid var(--line);border-radius:10px;outline:none;
+    line-height:1.55;resize:none;display:block;
   }
   #question::placeholder{color:#8a7fb5;}
   #mbti{
@@ -371,7 +372,7 @@
       <p class="label">무엇을 볼까요?</p>
       <div class="topics" id="topics"></div>
       <p class="label" style="margin-top:16px;">무엇이 궁금하신가요? <b>*</b></p>
-      <input id="question" type="text" maxlength="40" placeholder="예) 요즘 제 상황이 어떤가요?">
+      <textarea id="question" rows="2" maxlength="120" placeholder="예) 요즘 제 상황이 어떤가요?"></textarea>
       <p class="label" style="margin-top:16px;">나의 MBTI</p>
       <select id="mbti">
         <option value="">모르겠어요 / 안 넣을래요</option>
@@ -451,7 +452,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.53</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.54</div>
   </div>
 </div>
 
@@ -1250,7 +1251,9 @@ $('pvCancel').addEventListener('click', closePreview);
 $('backBtn').addEventListener('click', goIntro);
 $('againBtn').addEventListener('click', goIntro);
 $('copyBtn').addEventListener('click', saveImage);
-$('question').addEventListener('keydown', e=>{ if(e.key === 'Enter') goPick(); });
+$('question').addEventListener('keydown', e=>{
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); goPick(); }
+});
 
 const helpOverlay = $('helpOverlay');
 $('helpBtn').addEventListener('click', ()=>helpOverlay.classList.add('show'));
