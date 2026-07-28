@@ -66,12 +66,12 @@ PROMPT_HEAD = """너는 20년 경력의 타로 상담가야. 아래는 실제로
 
 [상담 주제] {topic}
 [질문] {question}
-[스프레드] {spread}
+{mbti_line}[스프레드] {spread}
 [뽑힌 카드]
 {cards}
 
 이 카드들을 질문에 딱 맞게 풀어줘. 조건은 이래.
-- 카드 하나하나가 '그 자리'에서 무슨 뜻인지 질문과 연결해서 설명해. 일반론 말고 이 질문에 대한 답으로.
+{mbti_rule}- 카드 하나하나가 '그 자리'에서 무슨 뜻인지 질문과 연결해서 설명해. 일반론 말고 이 질문에 대한 답으로.
 - 카드끼리의 흐름(앞 카드가 뒤 카드에 어떻게 이어지는지)을 반드시 짚어줘.
 - 카드마다 근거를 두 문장 이상 붙여줘. 왜 그렇게 읽히는지(그림·상징·정역방향) 짚어주고 넘어가.
 - 마지막에 '그래서 결론'과 '지금 당장 할 것' 을 분명하게 말해줘. 두루뭉술하게 넘어가지 마.
@@ -88,10 +88,25 @@ PROMPT_HEAD = """너는 20년 경력의 타로 상담가야. 아래는 실제로
 """
 
 
+MBTI_RULE = (
+    "- 상담받는 사람은 {m} 유형이야. {m} 가 납득하는 방식으로 설명해줘.\n"
+    "  · 생각하는 방식, 결정 내리는 방식, 감정을 다루는 방식이 그 유형답다는 전제로 읽어.\n"
+    "  · 이 사람이 이 상황에서 빠지기 쉬운 {m} 특유의 함정을 한 번은 콕 집어줘.\n"
+    "  · 조언은 {m} 가 실제로 실행할 수 있는 걸로 줘. 성향상 절대 못 할 일은 시키지 마.\n"
+    "  · 다만 MBTI 설명서를 읊지는 마. 어디까지나 카드 풀이가 중심이야.\n"
+)
+
+
 def build_prompt(d):
     q = (d.get("question") or "").strip() or "(질문을 따로 적지 않았음. 뽑힌 카드만 보고 지금 상황을 읽어줘)"
     topic = (d.get("topic") or "종합운").strip()
     spread = (d.get("spread") or "").strip()
+    mbti = (d.get("mbti") or "").strip().upper()[:4]
+    if mbti and len(mbti) == 4 and all(c.isalpha() for c in mbti):
+        mbti_line = "[MBTI] %s\n" % mbti
+        mbti_rule = MBTI_RULE.format(m=mbti)
+    else:
+        mbti_line = mbti_rule = ""
     lines = []
     for c in (d.get("cards") or []):
         pos = (c.get("pos") or "").strip()
@@ -103,6 +118,7 @@ def build_prompt(d):
             line += " — 자리 뜻: %s" % desc
         lines.append(line)
     return PROMPT_HEAD.format(topic=topic, question=q, spread=spread,
+                              mbti_line=mbti_line, mbti_rule=mbti_rule,
                               cards="\n".join(lines) if lines else "- (없음)")
 
 

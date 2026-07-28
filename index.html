@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.50
+  @version v1.0.51
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -78,6 +78,18 @@
     border:1px solid var(--line);border-radius:10px;outline:none;
   }
   #question::placeholder{color:#8a7fb5;}
+  #mbti{
+    width:100%;padding:12px 13px;font-size:15px;font-family:inherit;
+    background:rgba(0,0,0,.28);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;outline:none;
+    appearance:none;-webkit-appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,#8a7fb5 50%),linear-gradient(135deg,#8a7fb5 50%,transparent 50%);
+    background-position:calc(100% - 18px) 21px, calc(100% - 12px) 21px;
+    background-size:6px 6px, 6px 6px;background-repeat:no-repeat;
+  }
+  #mbti:focus{border-color:var(--accent);}
+  #mbti option{background:#241a4d;color:var(--text);}
+  .label .opt{color:#8a7fb5;font-weight:600;}
   #question:focus{border-color:var(--accent);}
   #question.warn{border-color:var(--rev);animation:qshake .4s;}
   @keyframes qshake{
@@ -357,6 +369,11 @@
       <div class="topics" id="topics"></div>
       <p class="label" style="margin-top:16px;">무엇이 궁금하신가요? <b>*</b></p>
       <input id="question" type="text" maxlength="40" placeholder="예) 요즘 제 상황이 어떤가요?">
+      <p class="label" style="margin-top:16px;">MBTI <span class="opt">(모르면 비워두세요)</span></p>
+      <select id="mbti">
+        <option value="">모르겠어요 / 안 넣을래요</option>
+        <option>ISTJ</option><option>ISFJ</option><option>INFJ</option><option>INTJ</option><option>ISTP</option><option>ISFP</option><option>INFP</option><option>INTP</option><option>ESTP</option><option>ESFP</option><option>ENFP</option><option>ENTP</option><option>ESTJ</option><option>ESFJ</option><option>ENFJ</option><option>ENTJ</option>
+      </select>
       <button class="primary" id="shuffleBtn">🔮 카드 섞기</button>
     </div>
   </div>
@@ -411,6 +428,7 @@
        먼저 <b>무엇을 볼지</b> 고르세요. 💼 직업운 · 💗 애정운(상대 있음) · 💘 애정운(상대 없음) · 💍 결혼운 · 💰 금전운 —
        항목에 따라 자리 이름과 카드 풀이, 종합 풀이가 <b>모두 그 주제에 맞게</b> 바뀝니다.<br>
        그다음 <b>궁금한 것을 꼭 적어주세요.</b> 질문이 구체적일수록 풀이도 정확해집니다.<br>
+       <b>MBTI</b>를 넣으면 그 성향에 맞춰 풀이와 조언을 다르게 해줍니다. 몰라도 괜찮아요.<br>
        카드는 <b>3장</b>을 뽑습니다.</p>
     <p><b>2. 78장에서 고르기</b><br>
        <b>카드 섞기</b>를 누르면 정통 덱 78장(메이저 22 + 마이너 56)이 전부 원형으로 둘러 펼쳐집니다.
@@ -430,7 +448,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.50</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.51</div>
   </div>
 </div>
 
@@ -1135,6 +1153,7 @@ async function askAI(){
 
   const body = {
     question: $('question').value.trim(),
+    mbti: $('mbti').value,
     topic: topic.name,
     spread: spread.title + ' ' + spread.n + '장',
     cards: chosen.map((fc, i)=>({
