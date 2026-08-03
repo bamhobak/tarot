@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.0.58
+  @version v1.0.64
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -294,6 +294,10 @@
   }
   .read.ai td{color:#e4dcff;}
   .read.ai tbody tr:nth-child(even) td{background:rgba(0,0,0,.16);}
+  .read.ai p.advice{
+    color:var(--gold);margin-top:12px;
+    text-shadow:0 0 10px rgba(232,200,119,.18);
+  }
   .read.ai .ai-wait{color:var(--gold);}
   .read.ai .ai-err{color:#f3b7a6;font-size:13.5px;line-height:1.6;}
   .read.ai .ai-sub{color:#8479b0;font-size:12px;margin-top:6px;}
@@ -359,7 +363,7 @@
 
 <header>
   <h1>이로재로타로</h1>
-  <p>with 별핑달핑</p>
+  <p>with ⭐별핑달핑🌙</p>
   <button class="help-btn" id="helpBtn">?</button>
 </header>
 
@@ -457,7 +461,7 @@
     <p style="color:#b6abdc;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
     <p style="color:#8479b0;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.58</div>
+    <div style="text-align:center;font-size:11px;color:#6b5f9a;margin-top:10px;">v1.0.64</div>
   </div>
 </div>
 
@@ -590,7 +594,7 @@ const $ = id => document.getElementById(id);
 const introStage = $('introStage'), pickStage = $('pickStage'), resultStage = $('resultStage');
 const fanEl = $('fan');
 const FAN_COUNT = 78;          // 화면에 펼치는 카드 수 (전체 덱)
-const FAN_SPAN  = 322;         // 아래쪽 38°를 비워 첫 장·끝 장이 확실히 떨어지게
+const FAN_SPAN  = 336;         // 아래쪽 24°를 비워 첫 장·끝 장이 닿지 않게 (간격 최대치)
 let fanCards = [];             // 부채꼴에 놓인 카드 데이터
 let picked = [];               // 고른 인덱스
 
@@ -848,7 +852,8 @@ function readAiBlocks(){
     if(el.nodeType !== 1) return;
     const tag = el.tagName;
     if(tag === 'H4') blocks.push({t:'h', text:el.textContent.trim()});
-    else if(tag === 'P') blocks.push({t:'p', text:el.textContent.trim()});
+    else if(tag === 'P') blocks.push({t:'p', text:el.textContent.trim(),
+                                      gold: el.classList.contains('advice')});
     else if(tag === 'UL') el.querySelectorAll('li').forEach(li=>blocks.push({t:'li', text:li.textContent.trim()}));
     else if(el.classList.contains('tw')){
       const table = el.querySelector('table');
@@ -989,7 +994,8 @@ function renderAiImage(withCards){
       b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 34; });
     } else if(b.t === 'p'){
       y += 10;
-      ctx.font = fnt(19); ctx.fillStyle = '#e4dcff';
+      ctx.font = fnt(19);
+      ctx.fillStyle = b.gold ? '#e8c877' : '#e4dcff';
       b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 32; });
     } else if(b.t === 'li'){
       y += 8;
@@ -1170,7 +1176,7 @@ function mdToHtml(md){
     if(h){ closeList(); out.push('<h4>' + h[1] + '</h4>'); continue; }
     if(li){ if(!inList){ out.push('<ul>'); inList = true; } out.push('<li>' + li[1] + '</li>'); continue; }
     closeList();
-    out.push('<p>' + t + '</p>');
+    out.push(/^(오늘의 조언|한 줄 결론)/.test(l) ? '<p class="advice">' + t + '</p>' : '<p>' + t + '</p>');
   }
   closeList();
   return out.join('');
@@ -1185,7 +1191,7 @@ async function askAI(){
   const P = posOf();
   const box = $('aiBox');
   box.classList.add('on');
-  box.innerHTML = '<p class="ai-wait">타로마스터가 심각한 표정으로 카드들을 살펴보고 있어요.<br>30~40초정도 걸려요.</p>';
+  box.innerHTML = '<p class="ai-wait">타로마스터가 심각한 표정으로 카드들을 살펴보고 있어요.<br>20~30초정도 걸려요.</p>';
 
   const body = {
     question: $('question').value.trim(),
@@ -1209,7 +1215,7 @@ async function askAI(){
     body: JSON.stringify(body)
   });
 
-  const WORKING = '<p class="ai-wait">타로마스터가 심각한 표정으로 카드들을 살펴보고 있어요.<br>30~40초정도 걸려요.</p>';
+  const WORKING = '<p class="ai-wait">타로마스터가 심각한 표정으로 카드들을 살펴보고 있어요.<br>20~30초정도 걸려요.</p>';
   const KNOCK = ['첫번째','두번째','세번째','네번째','다섯번째','여섯번째','일곱번째'];
   const TRIES = 8, WAIT = 15;      // 15초 간격으로 일곱 번까지 다시 두드려본다
   for(let n = 1; n <= TRIES; n++){
