@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   이로재로타로 (Tarot Reading)
-  @version v1.1.03
+  @version v1.2.00
   질문을 떠올리고 카드를 뽑으면 정/역방향까지 풀이해 주는 타로 앱.
   78장 전체 덱을 펼쳐 고르고, 확정 전에 카드를 미리 보고 정/역방향까지 정할 수 있습니다.
   카드 그림: Rider-Waite-Smith(1909) 원화 — 퍼블릭 도메인 (img/ 폴더)
@@ -10,24 +10,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%235b49c4'/><stop offset='1' stop-color='%231b1244'/></linearGradient><mask id='moon'><rect width='64' height='64' fill='black'/><circle cx='30' cy='33' r='17' fill='white'/><circle cx='39' cy='27' r='15' fill='black'/></mask></defs><rect width='64' height='64' rx='14' fill='url(%23bg)'/><rect x='2' y='2' width='60' height='60' rx='12' fill='none' stroke='%23e8c877' stroke-opacity='.85' stroke-width='2.5'/><rect width='64' height='64' fill='%23f4e4ad' mask='url(%23moon)'/><path d='M50 9.5 Q50.99 14.01 55.5 15 Q50.99 15.99 50 20.5 Q49.01 15.99 44.5 15 Q49.01 14.01 50 9.5 Z' fill='%23f6e9c0' fill-opacity='0.95'/><path d='M14 13.4 Q14.648 16.352 17.6 17 Q14.648 17.648 14 20.6 Q13.352 17.648 10.4 17 Q13.352 16.352 14 13.4 Z' fill='%23f6e9c0' fill-opacity='0.8'/><path d='M17 47.8 Q17.576 50.424 20.2 51 Q17.576 51.576 17 54.2 Q16.424 51.576 13.8 51 Q16.424 50.424 17 47.8 Z' fill='%23f6e9c0' fill-opacity='0.7'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%232f8f88'/><stop offset='1' stop-color='%2307242f'/></linearGradient><mask id='moon'><rect width='64' height='64' fill='black'/><circle cx='30' cy='33' r='17' fill='white'/><circle cx='39' cy='27' r='15' fill='black'/></mask></defs><rect width='64' height='64' rx='14' fill='url(%23bg)'/><rect x='2' y='2' width='60' height='60' rx='12' fill='none' stroke='%236fe0bd' stroke-opacity='.85' stroke-width='2.5'/><rect width='64' height='64' fill='%23f4e4ad' mask='url(%23moon)'/><path d='M50 9.5 Q50.99 14.01 55.5 15 Q50.99 15.99 50 20.5 Q49.01 15.99 44.5 15 Q49.01 14.01 50 9.5 Z' fill='%23f6e9c0' fill-opacity='0.95'/><path d='M14 13.4 Q14.648 16.352 17.6 17 Q14.648 17.648 14 20.6 Q13.352 17.648 10.4 17 Q13.352 16.352 14 13.4 Z' fill='%23f6e9c0' fill-opacity='0.8'/><path d='M17 47.8 Q17.576 50.424 20.2 51 Q17.576 51.576 17 54.2 Q16.424 51.576 13.8 51 Q16.424 50.424 17 47.8 Z' fill='%23f6e9c0' fill-opacity='0.7'/></svg>">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#fbf7ff">
+<meta name="theme-color" content="#08181e">
 <title>이로재로타로</title>
 <style>
   :root{
-    --bg:#fbf7ff;
-    --bg2:#fff3f8;
-    --panel:#ffffff;
-    --panel2:#f8f3ff;
-    --gold:#a06c10;          /* 밝은 바탕에서도 읽히는 진한 금빛 */
-    --gold-lite:#f2c14e;     /* 버튼·장식용 밝은 금 */
-    --gold-dim:#e2c286;
-    --text:#3a2c66;
-    --sub:#8073ad;
-    --line:#e9dffa;
-    --accent:#7c4dff;
-    --rev:#df5f6b;
+    --bg:#08181e;            /* 깊은 밤바다 빛 청록 */
+    --bg2:#0d2831;
+    --panel:#122b34;
+    --panel2:#16363f;
+    --gold:#6fe0bd;          /* 제목·강조 = 민트 */
+    --gold-lite:#8ff0d3;
+    --gold-dim:#39776f;
+    --amber:#f3c48a;         /* 결론 한 줄 = 따뜻한 호박빛 */
+    --text:#e4f3ef;
+    --sub:#8fb2b0;
+    --line:#22505a;
+    --accent:#4fd6c4;
+    --rev:#f0916f;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -35,16 +36,16 @@
     font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;
     color:var(--text);
     background:
-      radial-gradient(2px 2px at 12% 18%, rgba(240,182,60,.55), transparent 60%),
-      radial-gradient(2px 2px at 78% 12%, rgba(255,150,190,.5), transparent 60%),
-      radial-gradient(2px 2px at 33% 62%, rgba(150,130,255,.4), transparent 60%),
-      radial-gradient(2px 2px at 88% 74%, rgba(240,182,60,.45), transparent 60%),
-      radial-gradient(2px 2px at 58% 34%, rgba(255,150,190,.38), transparent 60%),
-      radial-gradient(2px 2px at 22% 88%, rgba(150,130,255,.35), transparent 60%),
-      radial-gradient(560px 380px at 6% -6%, rgba(255,203,231,.55), transparent 70%),
-      radial-gradient(520px 360px at 98% 4%, rgba(198,215,255,.55), transparent 70%),
-      radial-gradient(620px 440px at 50% 106%, rgba(255,231,190,.5), transparent 70%),
-      linear-gradient(180deg, #fdf9ff 0%, var(--bg) 55%, var(--bg2) 100%);
+      radial-gradient(1.4px 1.4px at 12% 18%, rgba(210,255,244,.85), transparent 60%),
+      radial-gradient(1.4px 1.4px at 78% 12%, rgba(255,236,214,.7), transparent 60%),
+      radial-gradient(1.4px 1.4px at 33% 62%, rgba(210,255,244,.6), transparent 60%),
+      radial-gradient(1.4px 1.4px at 88% 74%, rgba(255,236,214,.65), transparent 60%),
+      radial-gradient(1.4px 1.4px at 58% 34%, rgba(210,255,244,.5), transparent 60%),
+      radial-gradient(1.4px 1.4px at 22% 88%, rgba(255,236,214,.55), transparent 60%),
+      radial-gradient(600px 420px at 4% -8%, rgba(35,140,130,.38), transparent 70%),
+      radial-gradient(540px 380px at 100% 2%, rgba(28,96,132,.40), transparent 70%),
+      radial-gradient(680px 460px at 50% 108%, rgba(120,80,70,.28), transparent 70%),
+      linear-gradient(180deg, var(--bg2) 0%, var(--bg) 55%, #050f13 100%);
     background-attachment:fixed;
     display:flex;
     flex-direction:column;
@@ -60,14 +61,14 @@
   }
   header h1{
     font-size:23px;margin:4px 0;letter-spacing:2px;
-    background:linear-gradient(90deg,#9a5ce0 0%,#e0669b 50%,#f0a63c 100%);
+    background:linear-gradient(90deg,#6fe0bd 0%,#67c9e8 50%,#f3c48a 100%);
     -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;color:#9a5ce0;
+    -webkit-text-fill-color:transparent;color:#6fe0bd;
   }
   header p{font-size:12px;color:var(--sub);margin:0;}
   .help-btn{
     position:absolute;right:0;top:2px;
-    background:#fff;border:1.5px solid var(--line);
+    background:rgba(255,255,255,.04);border:1.5px solid var(--line);
     border-radius:50%;width:30px;height:30px;
     font-size:15px;font-weight:bold;cursor:pointer;color:var(--sub);
   }
@@ -78,28 +79,28 @@
   .panel{
     background:linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
     border:1px solid var(--line);border-radius:16px;padding:16px;
-    box-shadow:0 10px 28px rgba(124,77,255,.10);
+    box-shadow:0 12px 30px rgba(0,0,0,.45);
   }
   .label{font-size:12px;color:var(--sub);margin:0 0 6px 2px;font-weight:600;}
   #question{
     width:100%;padding:12px 13px;font-size:15px;font-family:inherit;
-    background:#f9f5ff;color:var(--text);
+    background:rgba(255,255,255,.045);color:var(--text);
     border:1px solid var(--line);border-radius:10px;outline:none;
     line-height:1.55;resize:none;display:block;
   }
-  #question::placeholder{color:#a99ccb;}
+  #question::placeholder{color:#6f9291;}
   #mbti{
     width:100%;padding:12px 13px;font-size:15px;font-family:inherit;
-    background:#f9f5ff;color:var(--text);
+    background:rgba(255,255,255,.045);color:var(--text);
     border:1px solid var(--line);border-radius:10px;outline:none;
     appearance:none;-webkit-appearance:none;
-    background-image:linear-gradient(45deg,transparent 50%,#a99ccb 50%),linear-gradient(135deg,#a99ccb 50%,transparent 50%);
+    background-image:linear-gradient(45deg,transparent 50%,#6f9291 50%),linear-gradient(135deg,#6f9291 50%,transparent 50%);
     background-position:calc(100% - 18px) 21px, calc(100% - 12px) 21px;
     background-size:6px 6px, 6px 6px;background-repeat:no-repeat;
   }
   #mbti:focus{border-color:var(--accent);}
-  #mbti option{background:#fff;color:var(--text);}
-  .label .opt{color:#a99ccb;font-weight:600;}
+  #mbti option{background:#122b34;color:var(--text);}
+  .label .opt{color:#7d9e9d;font-weight:600;}
   #question:focus{border-color:var(--accent);}
   #question.warn{border-color:var(--rev);animation:qshake .4s;}
   @keyframes qshake{
@@ -114,7 +115,7 @@
   .topic{
     grid-column:span 2;
     padding:8px 4px;border-radius:11px;cursor:pointer;
-    background:#f9f5ff;border:1.5px solid var(--line);
+    background:rgba(255,255,255,.04);border:1.5px solid var(--line);
     font-family:inherit;color:var(--sub);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
     line-height:1.25;transition:.15s;
@@ -123,22 +124,22 @@
   .topic .tn{font-size:12.5px;font-weight:700;white-space:nowrap;}
   .topic .ts{font-size:10.5px;opacity:.75;white-space:nowrap;}
   .topic i{font-style:normal;font-size:12px;margin-right:3px;}
-  .topic.on{border-color:var(--gold-lite);background:linear-gradient(180deg,#fff4d8,#ffe9bb);color:#8a5f12;
-    box-shadow:0 3px 10px rgba(242,193,78,.35);}
+  .topic.on{border-color:var(--gold);background:linear-gradient(180deg,rgba(111,224,189,.20),rgba(111,224,189,.09));
+    color:var(--gold-lite);box-shadow:0 3px 12px rgba(79,214,196,.22);}
   .todaynote{display:none;margin-top:16px;color:var(--gold);font-size:12.5px;line-height:1.5;}
   .todaynote.on{display:block;}
 
   .primary{
     width:100%;margin-top:16px;padding:14px;font-size:16px;font-weight:800;
     font-family:inherit;letter-spacing:1px;cursor:pointer;
-    background:linear-gradient(135deg,#ffd97e 0%,#f7b64a 55%,#ff9db8 130%);color:#4a3306;
+    background:linear-gradient(135deg,#7ff0d0 0%,#3fc7b6 55%,#2f9fb4 130%);color:#04302b;
     border:none;border-radius:12px;
-    box-shadow:0 8px 20px rgba(247,182,74,.38);
+    box-shadow:0 8px 20px rgba(63,199,182,.30);
   }
   .primary:active{transform:translateY(1px);}
   .ghost{
     padding:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;
-    background:#fff;color:var(--text);
+    background:rgba(255,255,255,.055);color:var(--text);
     border:1.5px solid var(--line);border-radius:12px;
   }
   .btn-row{display:flex;gap:8px;margin-top:14px;}
@@ -162,17 +163,17 @@
   }
   .back{
     background:
-      url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 103'><defs><radialGradient id='glow' cx='50%25' cy='44%25' r='52%25'><stop offset='0' stop-color='%23e8c877' stop-opacity='.26'/><stop offset='1' stop-color='%23e8c877' stop-opacity='0'/></radialGradient><mask id='moon'><rect width='60' height='103' fill='black'/><circle cx='29' cy='46' r='13' fill='white'/><circle cx='35.5' cy='41.5' r='11.6' fill='black'/></mask></defs><rect width='60' height='103' fill='url(%23glow)'/><circle cx='29' cy='46' r='19.5' fill='none' stroke='%23e8c877' stroke-opacity='.32' stroke-width='.6' stroke-dasharray='1.5 3'/><rect width='60' height='103' fill='%23f4e4ad' mask='url(%23moon)'/><path d='M12 13.2 Q12.504 15.496 14.8 16 Q12.504 16.504 12 18.8 Q11.496 16.504 9.2 16 Q11.496 15.496 12 13.2 Z' fill='%23f6e9c0' fill-opacity='0.9'/><path d='M47 18.9 Q47.378 20.622 49.1 21 Q47.378 21.378 47 23.1 Q46.622 21.378 44.9 21 Q46.622 20.622 47 18.9 Z' fill='%23f6e9c0' fill-opacity='0.75'/><path d='M19 79.7 Q19.414 81.586 21.3 82 Q19.414 82.414 19 84.3 Q18.586 82.414 16.7 82 Q18.586 81.586 19 79.7 Z' fill='%23f6e9c0' fill-opacity='0.8'/><path d='M45 73.1 Q45.522 75.478 47.9 76 Q45.522 76.522 45 78.9 Q44.478 76.522 42.1 76 Q44.478 75.478 45 73.1 Z' fill='%23f6e9c0' fill-opacity='0.85'/><path d='M30 8.4 Q30.288 9.712 31.6 10 Q30.288 10.288 30 11.6 Q29.712 10.288 28.4 10 Q29.712 9.712 30 8.4 Z' fill='%23f6e9c0' fill-opacity='0.6'/><path d='M8 48.3 Q8.306 49.694 9.7 50 Q8.306 50.306 8 51.7 Q7.694 50.306 6.3 50 Q7.694 49.694 8 48.3 Z' fill='%23f6e9c0' fill-opacity='0.55'/><path d='M52 50.2 Q52.324 51.676 53.8 52 Q52.324 52.324 52 53.8 Q51.676 52.324 50.2 52 Q51.676 51.676 52 50.2 Z' fill='%23f6e9c0' fill-opacity='0.6'/><path d='M33 92.2 Q33.324 93.676 34.8 94 Q33.324 94.324 33 95.8 Q32.676 94.324 31.2 94 Q32.676 93.676 33 92.2 Z' fill='%23f6e9c0' fill-opacity='0.55'/><path d='M16 32.7 Q16.234 33.766 17.3 34 Q16.234 34.234 16 35.3 Q15.766 34.234 14.7 34 Q15.766 33.766 16 32.7 Z' fill='%23f6e9c0' fill-opacity='0.45'/><path d='M44 92.7 Q44.234 93.766 45.3 94 Q44.234 94.234 44 95.3 Q43.766 94.234 42.7 94 Q43.766 93.766 44 92.7 Z' fill='%23f6e9c0' fill-opacity='0.45'/><path d='M25 66.6 Q25.252 67.748 26.4 68 Q25.252 68.252 25 69.4 Q24.748 68.252 23.6 68 Q24.748 67.748 25 66.6 Z' fill='%23f6e9c0' fill-opacity='0.5'/><path d='M38 58.8 Q38.216 59.784 39.2 60 Q38.216 60.216 38 61.2 Q37.784 60.216 36.8 60 Q37.784 59.784 38 58.8 Z' fill='%23f6e9c0' fill-opacity='0.4'/><path d='M9 6.5 H51 M9 96.5 H51' stroke='%23e8c877' stroke-opacity='.38' stroke-width='.5'/></svg>") center/100% 100% no-repeat,
+      url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 103'><defs><radialGradient id='glow' cx='50%25' cy='44%25' r='52%25'><stop offset='0' stop-color='%236fe0bd' stop-opacity='.24'/><stop offset='1' stop-color='%236fe0bd' stop-opacity='0'/></radialGradient><mask id='moon'><rect width='60' height='103' fill='black'/><circle cx='29' cy='46' r='13' fill='white'/><circle cx='35.5' cy='41.5' r='11.6' fill='black'/></mask></defs><rect width='60' height='103' fill='url(%23glow)'/><circle cx='29' cy='46' r='19.5' fill='none' stroke='%236fe0bd' stroke-opacity='.34' stroke-width='.6' stroke-dasharray='1.5 3'/><rect width='60' height='103' fill='%23f4e4ad' mask='url(%23moon)'/><path d='M12 13.2 Q12.504 15.496 14.8 16 Q12.504 16.504 12 18.8 Q11.496 16.504 9.2 16 Q11.496 15.496 12 13.2 Z' fill='%23f6e9c0' fill-opacity='0.9'/><path d='M47 18.9 Q47.378 20.622 49.1 21 Q47.378 21.378 47 23.1 Q46.622 21.378 44.9 21 Q46.622 20.622 47 18.9 Z' fill='%23f6e9c0' fill-opacity='0.75'/><path d='M19 79.7 Q19.414 81.586 21.3 82 Q19.414 82.414 19 84.3 Q18.586 82.414 16.7 82 Q18.586 81.586 19 79.7 Z' fill='%23f6e9c0' fill-opacity='0.8'/><path d='M45 73.1 Q45.522 75.478 47.9 76 Q45.522 76.522 45 78.9 Q44.478 76.522 42.1 76 Q44.478 75.478 45 73.1 Z' fill='%23f6e9c0' fill-opacity='0.85'/><path d='M30 8.4 Q30.288 9.712 31.6 10 Q30.288 10.288 30 11.6 Q29.712 10.288 28.4 10 Q29.712 9.712 30 8.4 Z' fill='%23f6e9c0' fill-opacity='0.6'/><path d='M8 48.3 Q8.306 49.694 9.7 50 Q8.306 50.306 8 51.7 Q7.694 50.306 6.3 50 Q7.694 49.694 8 48.3 Z' fill='%23f6e9c0' fill-opacity='0.55'/><path d='M52 50.2 Q52.324 51.676 53.8 52 Q52.324 52.324 52 53.8 Q51.676 52.324 50.2 52 Q51.676 51.676 52 50.2 Z' fill='%23f6e9c0' fill-opacity='0.6'/><path d='M33 92.2 Q33.324 93.676 34.8 94 Q33.324 94.324 33 95.8 Q32.676 94.324 31.2 94 Q32.676 93.676 33 92.2 Z' fill='%23f6e9c0' fill-opacity='0.55'/><path d='M16 32.7 Q16.234 33.766 17.3 34 Q16.234 34.234 16 35.3 Q15.766 34.234 14.7 34 Q15.766 33.766 16 32.7 Z' fill='%23f6e9c0' fill-opacity='0.45'/><path d='M44 92.7 Q44.234 93.766 45.3 94 Q44.234 94.234 44 95.3 Q43.766 94.234 42.7 94 Q43.766 93.766 44 92.7 Z' fill='%23f6e9c0' fill-opacity='0.45'/><path d='M25 66.6 Q25.252 67.748 26.4 68 Q25.252 68.252 25 69.4 Q24.748 68.252 23.6 68 Q24.748 67.748 25 66.6 Z' fill='%23f6e9c0' fill-opacity='0.5'/><path d='M38 58.8 Q38.216 59.784 39.2 60 Q38.216 60.216 38 61.2 Q37.784 60.216 36.8 60 Q37.784 59.784 38 58.8 Z' fill='%23f6e9c0' fill-opacity='0.4'/><path d='M9 6.5 H51 M9 96.5 H51' stroke='%236fe0bd' stroke-opacity='.40' stroke-width='.5'/></svg>") center/100% 100% no-repeat,
       repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 5px, transparent 5px 11px),
-      radial-gradient(120% 80% at 50% 30%, #9b8bff 0%, #7059e0 45%, #4b39a8 100%);
-    border:2px solid #d8b45e;
-    box-shadow:inset 0 0 0 2.5px rgba(255,232,168,.30), inset 0 0 14px rgba(40,20,90,.35);
+      radial-gradient(120% 80% at 50% 30%, #2f8f88 0%, #175766 45%, #07242f 100%);
+    border:2px solid #58a79b;
+    box-shadow:inset 0 0 0 2.5px rgba(170,240,220,.22), inset 0 0 14px rgba(0,0,0,.45);
   }
   /* 앞면 = 라이더-웨이트(1909) 원화 이미지 */
   .front{
     transform:rotateY(180deg);
-    background:#fbf5e6;
-    border:2px solid #d8b45e;color:#2b2140;
+    background:#f3ead3;
+    border:2px solid #58a79b;color:#2b2140;
   }
   .front .cimg{
     display:block;width:100%;height:100%;object-fit:cover;
@@ -184,7 +185,8 @@
   #pickStage{display:none;}
   .pick-head{text-align:center;margin-bottom:6px;}
   .pick-head .q{
-    font-size:19px;font-weight:800;line-height:1.45;color:#6b4bc4;min-height:26px;
+    font-size:19px;font-weight:800;line-height:1.45;color:var(--gold);
+    text-shadow:0 0 14px rgba(111,224,189,.25);min-height:26px;
   }
   #pickCnt{
     text-align:center;font-size:13px;font-weight:700;color:var(--sub);
@@ -192,7 +194,7 @@
   }
   .pick-guide{
     max-width:420px;margin:10px auto 0;
-    font-size:14px;font-weight:700;line-height:1.6;color:#a06c10;
+    font-size:14px;font-weight:700;line-height:1.6;color:var(--gold);
   }
   .fan-outer{
     height:calc(624px * var(--fanScale,1));
@@ -214,14 +216,14 @@
   /* 78장이 겹쳐 있으므로, 올려둔 카드를 살짝 띄워 어떤 카드를 고르는지 보이게 */
   .fan .card:hover{filter:brightness(1.3);z-index:200 !important;}
   .fan .card.preview{
-    filter:brightness(1.2) drop-shadow(0 0 14px rgba(240,166,60,.95));
+    filter:brightness(1.35) drop-shadow(0 0 14px rgba(111,224,189,.95));
     z-index:300 !important;
   }
 
   /* ── 카드 미리보기 (선택 확정 전) ── */
   .preview{display:none;margin:10px auto 0;max-width:340px;
     background:var(--panel);border:1px solid var(--gold-dim);border-radius:14px;
-    padding:14px;text-align:center;box-shadow:0 10px 28px rgba(124,77,255,.14);}
+    padding:14px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.5);}
   .preview.on{display:block;animation:pvIn .25s ease-out;}
   @keyframes pvIn{from{opacity:0;transform:translateY(8px);}}
   .preview .pv-card{display:flex;justify-content:center;}
@@ -235,7 +237,7 @@
   @keyframes deal{
     from{opacity:0;transform:translateY(120px) rotate(0deg) scale(.7);}
   }
-  .fan .card.picked{filter:brightness(1.15) drop-shadow(0 0 12px rgba(240,166,60,.9));}
+  .fan .card.picked{filter:brightness(1.3) drop-shadow(0 0 12px rgba(111,224,189,.85));}
   .fan .card.dim{opacity:.4;pointer-events:none;}
   .shuffling .fan .card{animation:shuf .5s infinite ease-in-out;}
   @keyframes shuf{
@@ -273,10 +275,10 @@
   }
   .read h3 .badge{
     font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;
-    background:rgba(124,77,255,.12);color:#6a4ad6;border:1px solid #cdbcff;
+    background:rgba(79,214,196,.16);color:#8ff0d3;border:1px solid #2f7d76;
   }
-  .read h3 .badge.rv{background:rgba(223,95,107,.12);color:#c74451;border-color:#f2b3ba;}
-  .read p{font-size:14.5px;line-height:1.7;color:#4c3f75;margin:8px 0 0;}
+  .read h3 .badge.rv{background:rgba(240,145,111,.16);color:#f7b193;border-color:#8a5340;}
+  .read p{font-size:14.5px;line-height:1.7;color:#cfe6e2;margin:8px 0 0;}
   /* 제미나이 전문가 풀이 */
   .read.ai{display:none;border-color:var(--gold-dim);}
   .read.ai.on{display:block;}
@@ -286,7 +288,7 @@
     margin:14px 0 4px;font-size:14px;color:var(--gold);
   }
   .read.ai ul{margin:4px 0 8px;padding-left:18px;}
-  .read.ai li{font-size:14.5px;line-height:1.7;color:#4c3f75;margin-bottom:3px;}
+  .read.ai li{font-size:14.5px;line-height:1.7;color:#cfe6e2;margin-bottom:3px;}
   /* 마지막 요약 표 */
   .read.ai .tw{overflow-x:auto;margin:12px 0 2px;-webkit-overflow-scrolling:touch;}
   .read.ai table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.5;}
@@ -294,72 +296,73 @@
     border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;
   }
   .read.ai th{
-    background:linear-gradient(180deg,#fff3d5,#ffe8b8);color:#8a5f12;
+    background:rgba(111,224,189,.14);color:var(--gold);
     font-weight:800;white-space:nowrap;
   }
-  .read.ai td{color:#4c3f75;}
-  .read.ai tbody tr:nth-child(even) td{background:rgba(124,77,255,.05);}
+  .read.ai td{color:#cfe6e2;}
+  .read.ai tbody tr:nth-child(even) td{background:rgba(255,255,255,.035);}
   .read.ai p.advice{
-    color:#a06c10;margin-top:12px;
+    color:var(--amber);margin-top:12px;
+    text-shadow:0 0 10px rgba(243,196,138,.16);
   }
   /* 표 바로 다음 줄은 한 줄 띄워서 숨 쉬게 */
   .read.ai .tw + p, .read.ai .tw + h4, .read.ai .tw + ul{margin-top:22px;}
   .read.ai .ai-wait{color:var(--gold);}
-  .read.ai .ai-err{color:#c74451;font-size:13.5px;line-height:1.6;}
-  .read.ai .ai-sub{color:#9b8dc2;font-size:12px;margin-top:6px;}
+  .read.ai .ai-err{color:#f7b193;font-size:13.5px;line-height:1.6;}
+  .read.ai .ai-sub{color:#789a99;font-size:12px;margin-top:6px;}
   .read.ai .ghost{margin-top:8px;padding:8px 12px;font-size:12.5px;}
   @keyframes blink{50%{opacity:.45;}}
   .read.ai .ai-wait{animation:blink 1.1s infinite;}
 
   .summary{
     border:1px dashed var(--gold-dim);border-radius:14px;padding:14px;
-    background:rgba(255,205,110,.14);margin-bottom:4px;
+    background:rgba(111,224,189,.08);margin-bottom:4px;
   }
   .summary h3{margin:0 0 6px;font-size:15px;color:var(--gold);}
-  .summary p{margin:0;font-size:14px;line-height:1.65;color:#4c3f75;}
+  .summary p{margin:0;font-size:14px;line-height:1.65;color:#dcefeb;}
   .qshow{text-align:center;margin-bottom:14px;}
   .qshow .qtop{display:block;font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.3px;}
   .qshow .qmain{
     display:block;margin-top:7px;font-size:19px;font-weight:800;line-height:1.45;
-    color:#6b4bc4;
+    color:var(--gold);text-shadow:0 0 14px rgba(111,224,189,.25);
   }
 
   /* ── 모달 ── */
   .overlay{
-    position:fixed;inset:0;background:rgba(58,44,102,.38);
+    position:fixed;inset:0;background:rgba(0,0,0,.62);
     display:none;align-items:center;justify-content:center;padding:16px;z-index:50;
   }
   .overlay.show{display:flex;}
   .modal{
-    background:linear-gradient(180deg,#ffffff,#f8f3ff);
-    border:1px solid var(--line);box-shadow:0 16px 40px rgba(124,77,255,.18);
+    background:linear-gradient(180deg,#152f39,#0e222a);
+    border:1px solid var(--line);box-shadow:0 18px 44px rgba(0,0,0,.6);
     border-radius:16px;max-width:420px;width:100%;
     max-height:88vh;overflow-y:auto;padding:22px;
   }
   .modal h2{margin-top:0;text-align:center;color:var(--gold);}
-  .modal p{font-size:13px;line-height:1.7;color:#4c3f75;}
+  .modal p{font-size:13px;line-height:1.7;color:#cfe6e2;}
   .modal .legend{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13px;}
   .modal .close{
     width:100%;margin-top:14px;padding:12px;font-size:16px;font-weight:700;
-    background:linear-gradient(135deg,#ffd97e,#f7b64a);color:#4a3306;
+    background:linear-gradient(135deg,#7ff0d0,#3fc7b6);color:#04302b;
     border:none;border-radius:10px;cursor:pointer;font-family:inherit;
   }
   /* 폰에서 길게 눌러 저장하는 화면 */
   .imgsheet .modal{padding:14px;}
   .imgsheet .ishint{
-    font-size:13.5px;color:#a06c10;text-align:center;margin:2px 0 10px;
+    font-size:13.5px;color:var(--gold);text-align:center;margin:2px 0 10px;
   }
   .imgsheet img{width:100%;border-radius:10px;display:block;}
   .imgsheet .close{
     width:100%;margin-top:12px;padding:12px;font-size:15px;font-weight:700;
     font-family:inherit;cursor:pointer;border:none;border-radius:10px;
-    background:linear-gradient(135deg,#ffd97e,#f7b64a);color:#4a3306;
+    background:linear-gradient(135deg,#7ff0d0,#3fc7b6);color:#04302b;
   }
 
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
-    background:#fff;border:1px solid var(--gold-dim);color:#8a5f12;
-    box-shadow:0 8px 22px rgba(124,77,255,.18);
+    background:rgba(10,26,32,.96);border:1px solid var(--gold-dim);color:var(--gold);
+    box-shadow:0 8px 22px rgba(0,0,0,.5);
     padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;
     opacity:0;pointer-events:none;transition:.25s;z-index:60;
   }
@@ -457,18 +460,18 @@
     <p><b>3. 방향 정하기</b><br>
        카드는 정방향/역방향이 무작위로 정해져 놓입니다. 어느 쪽인지는 알려드리지 않고,
        <b>뽑은 그대로 둘지</b> <b>↕ 뒤집기</b>로 뒤집어 놓을지만 정하시면 돼요.</p>
-    <div class="legend"><span class="badge" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(124,77,255,.12);color:#6a4ad6;border:1px solid #cdbcff;">정방향</span> 카드의 기운이 그대로 흐르는 상태예요.</div>
-    <div class="legend"><span class="badge rv" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(223,95,107,.12);color:#c74451;border:1px solid #f2b3ba;">역방향</span> 기운이 막히거나, 안쪽으로 향하거나, 반대로 뒤집힌 상태예요. 그림도 거꾸로 나옵니다.</div>
+    <div class="legend"><span class="badge" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(79,214,196,.16);color:#8ff0d3;border:1px solid #2f7d76;">정방향</span> 카드의 기운이 그대로 흐르는 상태예요.</div>
+    <div class="legend"><span class="badge rv" style="white-space:nowrap;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(240,145,111,.16);color:#f7b193;border:1px solid #8a5340;">역방향</span> 기운이 막히거나, 안쪽으로 향하거나, 반대로 뒤집힌 상태예요. 그림도 거꾸로 나옵니다.</div>
     <p><b>4. 결과 보기</b><br>
        고른 카드가 차례로 뒤집힙니다. <b>결과 복사</b>를 누르면 뽑은 카드와 풀이 전체가 글자로 복사돼요. 카톡에 바로 붙여넣으시면 됩니다.</p>
     <p><b>5. 풀이</b><br>
        카드가 다 열리면 질문과 뽑힌 카드를 그대로 넘겨서, 이 질문에 딱 맞는 해석을 받아옵니다.
        20~40초쯤 걸리니 잠시 기다려주세요.</p>
     <p><b>메이저 아르카나</b>(0~21번)는 인생의 큰 흐름을, <b>마이너 아르카나</b>는 일상의 구체적인 장면을 말해줍니다.</p>
-    <p style="color:#6b5e94;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
-    <p style="color:#9b8dc2;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
+    <p style="color:#a8c8c5;">타로는 정해진 미래가 아니라 <b>지금의 나에게 던지는 질문</b>이에요. 재미로 보시고, 마음에 남는 문장만 가져가세요.</p>
+    <p style="color:#789a99;font-size:12px;">카드 그림은 1909년 <b>라이더-웨이트</b> 원화(퍼블릭 도메인)를 씁니다.</p>
     <button class="close" id="closeHelp">확인</button>
-    <div style="text-align:center;font-size:11px;color:#a99ccb;margin-top:10px;">v1.1.03</div>
+    <div style="text-align:center;font-size:11px;color:#5c7c7b;margin-top:10px;">v1.2.00</div>
   </div>
 </div>
 
@@ -942,16 +945,16 @@ function renderAiImage(withCards){
 
   // 바탕(밤하늘)
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#fdf9ff'); bg.addColorStop(0.5, '#fbf7ff'); bg.addColorStop(1, '#fff3f8');
+  bg.addColorStop(0, '#0d2831'); bg.addColorStop(0.5, '#08181e'); bg.addColorStop(1, '#050f13');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, IMG_W, H);
 
   // 머리말
   let y = 20;
   ctx.textAlign = 'center';
-  ctx.font = fnt(17, 700); ctx.fillStyle = '#8073ad';
+  ctx.font = fnt(17, 700); ctx.fillStyle = '#8fb2b0';
   ctx.fillText(topic.icon + ' ' + topic.name, IMG_W/2, y);
   y += 27;
-  ctx.font = fnt(28, 800); ctx.fillStyle = '#6b4bc4';
+  ctx.font = fnt(28, 800); ctx.fillStyle = '#6fe0bd';
   qLines.forEach(l=>{ ctx.fillText(l, IMG_W/2, y); y += 38; });
   y += 12;
 
@@ -961,7 +964,7 @@ function renderAiImage(withCards){
     let x = (IMG_W - rowW) / 2;
     const top = y + 22;
     chosen.forEach((fc, i)=>{
-      ctx.font = fnt(15, 700); ctx.fillStyle = '#a06c10';
+      ctx.font = fnt(15, 700); ctx.fillStyle = '#6fe0bd';
       ctx.fillText(P.pos[i], x + cw/2, y);
       ctx.save();
       roundRect(ctx, x, top, cw, ch, 8); ctx.clip();
@@ -972,12 +975,12 @@ function renderAiImage(withCards){
           ctx.rotate(Math.PI);
           ctx.drawImage(im, -cw/2, -ch/2, cw, ch);
         } else ctx.drawImage(im, x, top, cw, ch);
-      } else { ctx.fillStyle = '#e7dcff'; ctx.fillRect(x, top, cw, ch); }
+      } else { ctx.fillStyle = '#17414d'; ctx.fillRect(x, top, cw, ch); }
       ctx.restore();
       roundRect(ctx, x, top, cw, ch, 8);
-      ctx.strokeStyle = '#d8b45e'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = '#58a79b'; ctx.lineWidth = 2; ctx.stroke();
       if(fc.reversed){
-        ctx.font = fnt(14, 800); ctx.fillStyle = '#c74451';
+        ctx.font = fnt(14, 800); ctx.fillStyle = '#f0916f';
         ctx.fillText('역방향', x + cw/2, top + ch + 7);
       }
       x += cw + cgap;
@@ -989,9 +992,9 @@ function renderAiImage(withCards){
   const panelY = y;
   roundRect(ctx, IMG_PAD, panelY, innerW, panelH, 16);
   const g = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
-  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#f8f3ff');
+  g.addColorStop(0, '#122b34'); g.addColorStop(1, '#16363f');
   ctx.fillStyle = g; ctx.fill();
-  ctx.strokeStyle = '#e2c286'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = '#39776f'; ctx.lineWidth = 1.5; ctx.stroke();
 
   ctx.textAlign = 'left';
   y = panelY + 22;
@@ -1000,27 +1003,27 @@ function renderAiImage(withCards){
     y += b._gap || 0;
     if(b.t === 'h'){
       y += 12;
-      ctx.font = fnt(23, 800); ctx.fillStyle = '#a06c10';
+      ctx.font = fnt(23, 800); ctx.fillStyle = '#6fe0bd';
       b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 34; });
     } else if(b.t === 'p'){
       y += 10;
       ctx.font = fnt(19);
-      ctx.fillStyle = b.gold ? '#a06c10' : '#4c3f75';
+      ctx.fillStyle = b.gold ? '#f3c48a' : '#cfe6e2';
       b._l.forEach(l=>{ ctx.fillText(l, x0, y); y += 32; });
     } else if(b.t === 'li'){
       y += 8;
-      ctx.font = fnt(19); ctx.fillStyle = '#4c3f75';
+      ctx.font = fnt(19); ctx.fillStyle = '#cfe6e2';
       ctx.fillText('·', x0, y);
       b._l.forEach(l=>{ ctx.fillText(l, x0 + 22, y); y += 32; });
     } else {
       y += 16;
       let cx = x0;
-      ctx.fillStyle = '#ffeec2';
+      ctx.fillStyle = 'rgba(111,224,189,.14)';
       ctx.fillRect(cx, y, b._w.reduce((a,c)=>a+c,0), b._hh);
       b.head.forEach((c, i)=>{
-        ctx.strokeStyle = '#e0d3f5'; ctx.lineWidth = 1;
+        ctx.strokeStyle = '#2b5a63'; ctx.lineWidth = 1;
         ctx.strokeRect(cx, y, b._w[i], b._hh);
-        ctx.font = fnt(17, 800); ctx.fillStyle = '#8a5f12';
+        ctx.font = fnt(17, 800); ctx.fillStyle = '#6fe0bd';
         let ty = y + 9;
         wrapLines(ctx, c, b._w[i]-20).forEach(l=>{ ctx.fillText(l, cx + 10, ty); ty += 28; });
         cx += b._w[i];
@@ -1029,13 +1032,13 @@ function renderAiImage(withCards){
       b.rows.forEach((r, ri)=>{
         cx = x0;
         if(ri % 2 === 1){
-          ctx.fillStyle = 'rgba(124,77,255,.05)';
+          ctx.fillStyle = 'rgba(255,255,255,.035)';
           ctx.fillRect(cx, y, b._w.reduce((a,c)=>a+c,0), b._rh[ri]);
         }
         r.forEach((c, i)=>{
-          ctx.strokeStyle = '#e0d3f5'; ctx.lineWidth = 1;
+          ctx.strokeStyle = '#2b5a63'; ctx.lineWidth = 1;
           ctx.strokeRect(cx, y, b._w[i], b._rh[ri]);
-          ctx.font = fnt(17); ctx.fillStyle = '#4c3f75';
+          ctx.font = fnt(17); ctx.fillStyle = '#cfe6e2';
           let ty = y + 9;
           wrapLines(ctx, c, b._w[i]-20).forEach(l=>{ ctx.fillText(l, cx + 10, ty); ty += 28; });
           cx += b._w[i];
