@@ -1,6 +1,6 @@
 @echo off
 chcp 949 > nul
-title 이로재로타로 중계서버 - 상태확인
+title 오늘의 타로 중계서버 - 상태확인
 echo.
 echo  중계서버 상태를 확인합니다...
 echo.
