@@ -1,10 +1,10 @@
 @echo off
 chcp 949 > nul
-title 오늘의 타로 중계서버 - 자동시작 등록
+title 밤호박 타로 중계서버 - 자동시작 등록
 cd /d "%~dp0"
 
 set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-set "VBS=%STARTUP%\오늘의타로_중계서버.vbs"
+set "VBS=%STARTUP%\밤호박타로_중계서버.vbs"
 set "OLDVBS=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\이로재로타로_중계서버.vbs"
 if exist "%OLDVBS%" del "%OLDVBS%"
 

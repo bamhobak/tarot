@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-오늘의 타로 — 제미나이 중계 서버
+밤호박 타로 — 제미나이 중계 서버
   타로 페이지(브라우저)  →  이 서버  →  gemini_scraper(비회원 스크래퍼)  →  제미나이
 
 - 항상 켜두는 PC에서 이 파일만 실행해두면 됩니다.  python tarot_relay.py
@@ -349,7 +349,7 @@ def main():
         log("포트 %d 를 못 열었습니다. 중계서버가 이미 켜져 있는 것 같아요. (%s)" % (PORT, e))
         return
     log("=" * 46)
-    log("오늘의 타로 제미나이 중계 서버 시작")
+    log("밤호박 타로 제미나이 중계 서버 시작")
     log("주소 http://localhost:%d  /  확인 http://localhost:%d/health" % (PORT, PORT))
     log("제미나이 창은 요청 올 때만 뜨고 %d초 놀면 자동으로 닫힙니다" % IDLE_STOP_SEC)
     log("=" * 46)

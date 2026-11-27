@@ -1,6 +1,6 @@
 @echo off
 chcp 949 > nul
-title 오늘의 타로 중계서버 - 터널 준비
+title 밤호박 타로 중계서버 - 터널 준비
 cd /d "%~dp0"
 
 echo.

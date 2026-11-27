@@ -4,7 +4,7 @@
 
   python build_relay.py
 
-결과: 바탕화면\오늘의타로_중계서버.zip
+결과: 바탕화면\밤호박타로_중계서버.zip
       (안에 TarotRelay.exe + 무창 크롬 + 실행용 배치들)
 """
 import os
@@ -17,7 +17,7 @@ from pathlib import Path
 BASE = Path(__file__).parent
 NAME = "TarotRelay"
 OUT_DIR = BASE / "dist" / NAME
-PKG_NAME = "오늘의타로중계"
+PKG_NAME = "밤호박타로중계"
 TUNNEL_DOMAIN = "identify-stimuli-reapply.ngrok-free.dev"   # ngrok 고정주소(공개용)
 
 
@@ -114,7 +114,7 @@ def main():
     # ── 4. ZIP ────────────────────────────────────────
     step(4, "ZIP 만드는 중...")
     desktop = Path(os.environ.get("USERPROFILE", "~")) / "Desktop"
-    zip_path = desktop / "오늘의타로_중계서버.zip"
+    zip_path = desktop / "밤호박타로_중계서버.zip"
     if zip_path.exists():
         zip_path.unlink()
     total = 0
